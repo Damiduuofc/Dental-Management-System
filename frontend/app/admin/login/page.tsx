@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -50,6 +51,14 @@ export default function LoginPage() {
 
   return (
     <div className="flex h-screen w-full">
+          {/* Top Right Admin Login Button */}
+      <button
+        onClick={() => router.push("/admin/login")}
+        className="absolute top-6 right-6 z-50 flex items-center gap-2 rounded-full border border-blue-200 bg-white px-5 py-3 text-sm font-semibold text-blue-700 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-700 hover:bg-blue-700 hover:text-white hover:shadow-xl"
+      >
+        <ArrowLeft size={18} />
+        Paint Login
+      </button>
       {/* Left Section */}
       <div className="hidden lg:flex w-1/2 bg-blue-900 text-white flex-col items-center justify-center p-12">
 

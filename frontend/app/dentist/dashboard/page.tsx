@@ -13,7 +13,11 @@ import {
   Activity,
   CheckCircle2,
   Clock,
-  ChevronRight
+  ChevronRight,
+  FileHeart,
+  CreditCard,
+  MessageSquare,
+  FileText
 } from "lucide-react";
 
 interface UserProfile {
@@ -88,7 +92,10 @@ export default function DentistDashboard() {
     { title: "Appointments", id: "appointments", icon: Calendar },
     { title: "Patients", id: "patients", icon: Users },
     { title: "Treatments", id: "treatments", icon: Stethoscope },
-    { title: "Clinical Notes", id: "notes", icon: ClipboardList },
+    { title: "X-rays & Docs", id: "x-rays", icon: FileHeart },
+    { title: "Billing", id: "billing", icon: CreditCard },
+    { title: "Messages", id: "messages", icon: MessageSquare },
+    { title: "Reports", id: "reports", icon: FileText },
   ];
 
   const stats = [

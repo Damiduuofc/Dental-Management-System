@@ -32,3 +32,15 @@ export const isAdmin = (req, res, next) => {
     return res.status(403).json({ message: "Access denied. Requires system_admin role." });
   }
 };
+
+/**
+ * Middleware to restrict routes to staff members (admin, assistant, dentist).
+ * Call this AFTER verifyToken.
+ */
+export const isStaff = (req, res, next) => {
+  if (req.user && ['system_admin', 'assistant', 'dentist'].includes(req.user.role)) {
+    next();
+  } else {
+    return res.status(403).json({ message: "Access denied. Staff only." });
+  }
+};
