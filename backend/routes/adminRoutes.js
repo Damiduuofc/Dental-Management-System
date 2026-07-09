@@ -9,7 +9,12 @@ import {
   createAppointment,
   updateAppointment,
   deleteAppointment,
-  addPatient
+  addPatient,
+  getBills,
+  createBill,
+  updateBill,
+  getBillingSummary,
+  createAdminCheckoutSession
 } from "../controllers/adminController.js";
 import { verifyToken, isAdmin, isStaff } from '../middleware/authMiddleware.js';
 
@@ -27,5 +32,12 @@ router.get('/appointments', verifyToken, isStaff, getAppointments);
 router.post('/appointments', verifyToken, isStaff, createAppointment);
 router.put('/appointments/:id', verifyToken, isStaff, updateAppointment);
 router.delete('/appointments/:id', verifyToken, isStaff, deleteAppointment);
+
+// Billing management routes
+router.get('/billing', verifyToken, isStaff, getBills);
+router.post('/billing', verifyToken, isStaff, createBill);
+router.put('/billing/:id', verifyToken, isStaff, updateBill);
+router.post('/billing/:id/checkout-session', verifyToken, isStaff, createAdminCheckoutSession);
+router.get('/billing/summary', verifyToken, isStaff, getBillingSummary);
 
 export default router;

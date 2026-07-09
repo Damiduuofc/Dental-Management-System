@@ -268,3 +268,105 @@ export const sendPatientWelcomeEmail = async (email, patientName, tempPassword) 
     throw new Error('Failed to send welcome email. Details: ' + error.message);
   }
 };
+
+export const sendBillingReceiptEmail = async (email, patientName, bill, pdfBuffer) => {
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+
+  if (!emailUser || !emailPass) {
+    console.log('\n=========================================');
+    console.log(`✉️ [DEVELOPMENT EMAIL] Billing Receipt Email for ${patientName} (${email}):`);
+    console.log(`Treatment: ${bill.treatment}`);
+    console.log(`Amount: Rs. ${bill.amount.toLocaleString()} via ${bill.paymentMethod || 'N/A'}`);
+    console.log(`PDF Attachment: Simulated (Buffer size: ${pdfBuffer.length} bytes)`);
+    console.log('=========================================\n');
+    return { success: true, message: 'Receipt email logged to server console (development mode).' };
+  }
+
+  try {
+    const cleanPass = emailPass.replace(/[\s\u00a0]/g, '');
+
+    let transportConfig = {
+      auth: {
+        user: emailUser,
+        pass: cleanPass,
+      },
+    };
+
+    if (process.env.EMAIL_HOST && process.env.EMAIL_HOST.toLowerCase().includes('gmail')) {
+      transportConfig.service = 'gmail';
+    } else {
+      transportConfig.host = process.env.EMAIL_HOST;
+      transportConfig.port = parseInt(process.env.EMAIL_PORT || '587');
+      transportConfig.secure = process.env.EMAIL_PORT === '465';
+      transportConfig.tls = {
+        rejectUnauthorized: false,
+      };
+    }
+
+    const transporter = nodemailer.createTransport(transportConfig);
+
+    const formattedDate = new Date(bill.date || new Date()).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const mailOptions = {
+      from: `"DentCare Clinic" <${emailUser}>`,
+      to: email,
+      subject: `DentCare Clinic - Payment Receipt: INV-${bill._id.toString().substring(18).toUpperCase()}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+          <h2 style="color: #0d9488; text-align: center;">Payment Receipt Confirmation</h2>
+          <p>Dear ${patientName},</p>
+          <p>Thank you for your payment. We have successfully processed your payment transaction. Here are the invoice receipt details:</p>
+          
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: bold; width: 140px;">Invoice Reference:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: bold;">INV-${bill._id.toString().substring(18).toUpperCase()}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: bold;">Treatment:</td>
+                <td style="padding: 6px 0; color: #0f172a;">${bill.treatment}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: bold;">Amount Paid:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: bold;">Rs. ${Number(bill.amount).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: bold;">Payment Method:</td>
+                <td style="padding: 6px 0; color: #0f172a; font-weight: bold; text-transform: uppercase;">${bill.paymentMethod || 'N/A'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; color: #64748b; font-weight: bold;">Date Paid:</td>
+                <td style="padding: 6px 0; color: #0f172a;">${formattedDate}</td>
+              </tr>
+            </table>
+          </div>
+
+          <p>Please find attached the official PDF invoice/receipt for your records.</p>
+          <p>If you have any questions or require support regarding this billing summary, please reach out to us at billing@dentcare.com.</p>
+          
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-top: 30px;"/>
+          <p style="font-size: 12px; color: #64748b; text-align: center;">Thank you for choosing DentCare Dental Clinic.</p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `Invoice-Receipt-INV-${bill._id.toString().substring(18).toUpperCase()}.pdf`,
+          content: pdfBuffer
+        }
+      ]
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✉️ Billing receipt email sent to ${email}: ${info.messageId}`);
+    return { success: true, message: 'Billing receipt email sent.' };
+  } catch (error) {
+    console.error('❌ Error sending billing receipt email:', error);
+    throw new Error('Failed to send billing receipt email. Details: ' + error.message);
+  }
+};

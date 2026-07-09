@@ -51,7 +51,8 @@ interface Bill {
   _id: string;
   amount: number;
   treatment: string;
-  status: 'Paid' | 'Unpaid';
+  status: 'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid';
+  paymentMethod?: 'Cash' | 'Card' | 'N/A';
   date: string;
 }
 
@@ -201,6 +202,33 @@ export default function PatientDashboard() {
       fetchDentists();
       fetchNotifications();
       fetchBills();
+
+      // Check Stripe redirect success
+      const searchParams = new URLSearchParams(window.location.search);
+      const isSuccess = searchParams.get('payment_success') === 'true';
+      const successBillId = searchParams.get('bill_id');
+      if (isSuccess && successBillId) {
+        const confirmPayment = async () => {
+          try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing/${successBillId}/pay`, {
+              method: 'PUT',
+              headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+              }
+            });
+            if (res.ok) {
+              alert("Payment successful! Confirmation email has been sent.");
+              window.history.replaceState({}, document.title, window.location.pathname);
+              fetchBills();
+              fetchNotifications();
+            }
+          } catch (error) {
+            console.error("Error confirming payment:", error);
+          }
+        };
+        confirmPayment();
+      }
     }
   }, []);
 
@@ -278,17 +306,16 @@ export default function PatientDashboard() {
   const handlePayBill = async (billId: string) => {
     setPaymentLoading(billId);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing/${billId}/pay`, {
-        method: 'PUT',
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing/${billId}/checkout-session`, {
+        method: 'POST',
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
         }
       });
       if (response.ok) {
-        alert("Payment successful! Confirmation email has been sent.");
-        fetchBills();
-        fetchNotifications();
+        const { url } = await response.json();
+        window.location.href = url;
       } else {
         const errData = await response.json();
         alert(errData.message || "Failed to process payment.");
@@ -610,16 +637,32 @@ export default function PatientDashboard() {
         )}
 
         {/* Tab View Selection: Billing & Balance */}
-        {activeTab === "Billing & Balance" && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-2xl font-bold text-slate-800">Billing & Invoices</h3>
-              <p className="text-slate-500 text-sm">Review receipts and complete pending payments</p>
-            </div>
+        {activeTab === "Billing & Balance" && (() => {
+          const outstandingBalance = bills
+            .filter(b => b.status === 'Unpaid' || b.status === 'Pending' || b.status === 'Partially Paid')
+            .reduce((sum, b) => sum + b.amount, 0);
 
-            <div className="grid md:grid-cols-3 gap-6">
-              {/* Bills List */}
-              <div className="md:col-span-2 space-y-4">
+          return (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-2xl font-bold text-slate-800">Billing & Invoices</h3>
+                <p className="text-slate-500 text-sm">Review receipts and complete pending payments</p>
+              </div>
+
+              {/* Outstanding Balance card */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex items-center justify-between max-w-3xl">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Outstanding Balance</p>
+                  <p className="text-3xl font-black text-slate-800 mt-1">Rs. {outstandingBalance.toLocaleString()}</p>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-2xl">
+                  <CreditCard className="text-blue-600" size={24} />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Bills List */}
+                <div className="md:col-span-2 space-y-4">
                 {bills.length === 0 ? (
                   <div className="bg-white rounded-3xl p-12 border text-center text-slate-500 font-medium">
                     No billing statements found.
@@ -634,7 +677,7 @@ export default function PatientDashboard() {
                           {bill.status}
                         </span>
                         <h4 className="font-bold text-lg text-slate-800 mt-2">{bill.treatment}</h4>
-                        <p className="text-xs text-slate-400 mt-1 font-semibold">Date: {new Date(bill.date).toLocaleDateString()}</p>
+                        <p className="text-xs text-slate-400 mt-1 font-semibold">Date: {new Date(bill.date).toLocaleDateString()} | Method: {bill.paymentMethod || 'N/A'}</p>
                       </div>
 
                       <div className="flex items-center gap-6">
@@ -673,10 +716,11 @@ export default function PatientDashboard() {
                   <p className="text-xs opacity-50 uppercase tracking-wider">Help Desk</p>
                   <p className="text-sm mt-1 font-semibold">billing@dentcare.com</p>
                 </div>
-              </div>
             </div>
           </div>
-        )}
+        </div>
+      );
+    })()}
 
         {/* Tab View Selection: Notifications */}
         {activeTab === "Notifications" && (

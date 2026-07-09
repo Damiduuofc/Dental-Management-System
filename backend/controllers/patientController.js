@@ -1,12 +1,13 @@
 import Patient from "../models/Patient.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { sendOtpEmail, sendAppointmentConfirmationEmail } from "../utils/emailService.js";
+import { sendOtpEmail, sendAppointmentConfirmationEmail, sendBillingReceiptEmail } from "../utils/emailService.js";
 import User from "../models/User.js";
 import Appointment from "../models/Appointment.js";
-import { generateAppointmentReceiptPdf } from "../utils/pdfGenerator.js";
+import { generateAppointmentReceiptPdf, generateBillingReceiptPdf } from "../utils/pdfGenerator.js";
 import Notification from "../models/Notification.js";
 import Billing from "../models/Billing.js";
+import Stripe from "stripe";
 
 export const registerPatient = async (req, res) => {
   try {
@@ -343,7 +344,7 @@ export const payBill = async (req, res) => {
   try {
     const bill = await Billing.findOneAndUpdate(
       { _id: id, patient: req.user.id },
-      { status: 'Paid' },
+      { status: 'Paid', paymentMethod: 'Card' },
       { new: true }
     );
     if (!bill) {
@@ -358,8 +359,52 @@ export const payBill = async (req, res) => {
       type: 'billing'
     });
 
+    // Send Receipt Email
+    try {
+      const patient = await Patient.findById(req.user.id);
+      if (patient) {
+        const pdfBuffer = await generateBillingReceiptPdf(patient.name, bill);
+        await sendBillingReceiptEmail(patient.email, patient.name, bill, pdfBuffer);
+      }
+    } catch (emailErr) {
+      console.error("Failed to generate/send paid billing receipt email:", emailErr);
+    }
+
     res.json({ message: "Bill paid successfully", bill });
   } catch (error) {
     res.status(500).json({ message: "Server error paying bill", error: error.message });
+  }
+};
+
+export const createCheckoutSession = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const bill = await Billing.findOne({ _id: id, patient: req.user.id });
+    if (!bill) {
+      return res.status(404).json({ message: "Bill not found" });
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'lkr',
+          product_data: {
+            name: bill.treatment,
+            description: `Dental Treatment: ${bill.treatment}`,
+          },
+          unit_amount: bill.amount * 100, // Stripe expects cents
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/patient/dashboard?payment_success=true&bill_id=${id}`,
+      cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/patient/dashboard?payment_cancel=true`,
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    res.status(500).json({ message: "Server error creating checkout session", error: error.message });
   }
 };

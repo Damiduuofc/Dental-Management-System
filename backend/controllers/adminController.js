@@ -1,12 +1,13 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import Stripe from 'stripe';
 import Admin from '../models/Admin.js';
 import User from "../models/User.js";
 import Patient from '../models/Patient.js';
 import Appointment from '../models/Appointment.js';
-import { generateAppointmentReceiptPdf } from '../utils/pdfGenerator.js';
-import { sendAppointmentConfirmationEmail, sendPatientWelcomeEmail } from '../utils/emailService.js';
+import { generateAppointmentReceiptPdf, generateBillingReceiptPdf } from '../utils/pdfGenerator.js';
+import { sendAppointmentConfirmationEmail, sendPatientWelcomeEmail, sendBillingReceiptEmail } from '../utils/emailService.js';
 import Notification from '../models/Notification.js';
 import Billing from '../models/Billing.js';
 
@@ -317,5 +318,184 @@ export const addPatient = async (req, res) => {
     res.status(201).json({ message: "Patient record created successfully", patient: { _id: newPatient._id, name, email } });
   } catch (error) {
     res.status(500).json({ message: "Server error creating patient", error: error.message });
+  }
+};
+
+export const getBills = async (req, res) => {
+  try {
+    const bills = await Billing.find().populate('patient', 'name email phoneNumber').sort({ createdAt: -1 });
+    res.json(bills);
+  } catch (error) {
+    res.status(500).json({ message: "Server error fetching bills", error: error.message });
+  }
+};
+
+export const createBill = async (req, res) => {
+  const { patientId, amount, treatment, status, paymentMethod, items } = req.body;
+  try {
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ message: "Patient not found" });
+    }
+
+    let calculatedAmount = amount;
+    let calculatedTreatment = treatment;
+
+    if (items && items.length > 0) {
+      calculatedAmount = items.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      calculatedTreatment = items.map(item => item.name).filter(Boolean).join(', ');
+    }
+
+    const bill = await Billing.create({
+      patient: patientId,
+      amount: calculatedAmount,
+      treatment: calculatedTreatment,
+      status: status || 'Unpaid',
+      paymentMethod: paymentMethod || 'N/A',
+      items: items || [],
+      date: new Date()
+    });
+
+    // Notification
+    await Notification.create({
+      patient: patientId,
+      title: "Invoice Generated",
+      message: `An invoice of Rs. ${Number(calculatedAmount).toLocaleString()} has been generated for your ${calculatedTreatment} treatment.`,
+      type: 'billing'
+    });
+
+    // Send Receipt Email if Paid
+    if (bill.status === 'Paid') {
+      try {
+        const pdfBuffer = await generateBillingReceiptPdf(patient.name, bill);
+        await sendBillingReceiptEmail(patient.email, patient.name, bill, pdfBuffer);
+      } catch (emailErr) {
+        console.error("Failed to generate/send invoice receipt email on creation:", emailErr);
+      }
+    }
+
+    res.status(201).json({ message: "Invoice created successfully", bill });
+  } catch (error) {
+    res.status(500).json({ message: "Server error creating bill", error: error.message });
+  }
+};
+
+export const updateBill = async (req, res) => {
+  const { id } = req.params;
+  const { amount, status, treatment, paymentMethod, items } = req.body;
+  try {
+    const bill = await Billing.findById(id);
+    if (!bill) {
+      return res.status(404).json({ message: "Invoice not found" });
+    }
+
+    const originalStatus = bill.status;
+
+    if (items && items.length > 0) {
+      bill.items = items;
+      bill.amount = items.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      bill.treatment = items.map(item => item.name).filter(Boolean).join(', ');
+    } else {
+      if (amount !== undefined) bill.amount = amount;
+      if (treatment !== undefined) bill.treatment = treatment;
+    }
+
+    if (status !== undefined) bill.status = status;
+    if (paymentMethod !== undefined) bill.paymentMethod = paymentMethod;
+
+    await bill.save();
+
+    // Create notification for patient about payment updates
+    await Notification.create({
+      patient: bill.patient,
+      title: "Invoice Updated",
+      message: `Your invoice for ${bill.treatment} has been updated. Status: ${bill.status}, Amount: Rs. ${Number(bill.amount).toLocaleString()}.`,
+      type: 'billing'
+    });
+
+    // Send Receipt Email if transitioned to Paid
+    if (bill.status === 'Paid' && originalStatus !== 'Paid') {
+      try {
+        const populatedBill = await Billing.findById(bill._id).populate('patient');
+        if (populatedBill && populatedBill.patient) {
+          const pdfBuffer = await generateBillingReceiptPdf(populatedBill.patient.name, populatedBill);
+          await sendBillingReceiptEmail(populatedBill.patient.email, populatedBill.patient.name, populatedBill, pdfBuffer);
+        }
+      } catch (emailErr) {
+        console.error("Failed to generate/send invoice receipt email on update:", emailErr);
+      }
+    }
+
+    res.json({ message: "Invoice updated successfully", bill });
+  } catch (error) {
+    res.status(500).json({ message: "Server error updating bill", error: error.message });
+  }
+};
+
+export const getBillingSummary = async (req, res) => {
+  try {
+    const bills = await Billing.find();
+    const totalSales = bills
+      .filter(b => b.status === 'Paid')
+      .reduce((sum, b) => sum + b.amount, 0);
+    const totalOutstanding = bills
+      .filter(b => b.status === 'Unpaid' || b.status === 'Pending' || b.status === 'Partially Paid')
+      .reduce((sum, b) => sum + b.amount, 0);
+    
+    const statusCounts = { Paid: 0, Unpaid: 0, Pending: 0, 'Partially Paid': 0 };
+    bills.forEach(b => {
+      const s = b.status || 'Unpaid';
+      statusCounts[s] = (statusCounts[s] || 0) + 1;
+    });
+
+    const treatmentRevenue = {};
+    bills.forEach(b => {
+      if (b.status === 'Paid') {
+        treatmentRevenue[b.treatment] = (treatmentRevenue[b.treatment] || 0) + b.amount;
+      }
+    });
+
+    res.json({
+      totalSales,
+      totalOutstanding,
+      statusCounts,
+      treatmentRevenue,
+      totalInvoices: bills.length
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error fetching billing summary", error: error.message });
+  }
+};
+
+export const createAdminCheckoutSession = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const bill = await Billing.findById(id);
+    if (!bill) {
+      return res.status(404).json({ message: "Invoice not found" });
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'lkr',
+          product_data: {
+            name: bill.treatment,
+            description: `Dental Treatment Invoice: ${bill.treatment}`,
+          },
+          unit_amount: bill.amount * 100, // Stripe expects cents
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/billing?payment_success=true&bill_id=${id}`,
+      cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/billing?payment_cancel=true`,
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    res.status(500).json({ message: "Server error creating checkout session", error: error.message });
   }
 };

@@ -181,7 +181,7 @@ export default function AppointmentsScreen() {
 
   const filteredAppointments = appointments.filter((app) => {
     if (activeTab === 'Upcoming') {
-      return app.status === 'Upcoming' || app.status === 'Pending' || app.status === 'Confirmed' || app.status === 'In Progress';
+      return app.status === 'Pending' || app.status === 'Confirmed' || app.status === 'In Progress';
     }
     return app.status === 'Completed' || app.status === 'Cancelled';
   });

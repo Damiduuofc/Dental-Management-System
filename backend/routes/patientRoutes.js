@@ -13,7 +13,8 @@ import {
   getNotifications,
   markNotificationAsRead,
   getBills,
-  payBill
+  payBill,
+  createCheckoutSession
 } from '../controllers/patientController.js';
 import { verifyToken } from '../middleware/authMiddleware.js';
 
@@ -38,6 +39,7 @@ router.put('/appointments/:id/cancel', verifyToken, cancelAppointment);
 router.get('/notifications', verifyToken, getNotifications);
 router.put('/notifications/read', verifyToken, markNotificationAsRead);
 router.get('/billing', verifyToken, getBills);
+router.post('/billing/:id/checkout-session', verifyToken, createCheckoutSession);
 router.put('/billing/:id/pay', verifyToken, payBill);
 
 export default router;

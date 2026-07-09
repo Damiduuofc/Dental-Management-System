@@ -16,9 +16,18 @@ const billingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Paid', 'Unpaid'],
+    enum: ['Paid', 'Unpaid', 'Pending', 'Partially Paid'],
     default: 'Unpaid'
   },
+  paymentMethod: {
+    type: String,
+    enum: ['Cash', 'Card', 'N/A'],
+    default: 'N/A'
+  },
+  items: [{
+    name: { type: String, required: true },
+    cost: { type: Number, required: true }
+  }],
   date: {
     type: Date,
     default: Date.now

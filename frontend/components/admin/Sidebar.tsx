@@ -29,7 +29,7 @@ export default function Sidebar() {
     localStorage.removeItem("token");
     localStorage.removeItem("adminToken");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (

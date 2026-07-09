@@ -37,6 +37,7 @@ export default function Dashboard() {
           return;
         }
         setUser(parsedUser);
+        fetchDashboardData();
         setLoading(false);
       } catch (err) {
         console.error("Error parsing user profile:", err);
@@ -45,14 +46,44 @@ export default function Dashboard() {
     }
   }, [router]);
 
+  const [appointments, setAppointments] = useState<any[]>([]);
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/appointments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppointments(data);
+      }
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    }
+  };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayAppointments = appointments.filter(appt => {
+    if (!appt.date) return false;
+    const apptDate = new Date(appt.date).toISOString().split('T')[0];
+    return apptDate === todayStr;
+  });
+
+  const scheduledToday = todayAppointments.length;
+  const checkIn = todayAppointments.filter(appt => appt.status === 'Confirmed' || appt.status === 'In Progress').length;
+  const pendingTasks = appointments.filter(appt => appt.status === 'Pending').length;
+
   const stats = [
     {
       label: "Scheduled Today",
-      val: 15,
+      val: scheduledToday,
     },
     {
       label: "Check In",
-      val: 8,
+      val: checkIn,
     },
     {
       label: "Low Stock Items",
@@ -60,7 +91,7 @@ export default function Dashboard() {
     },
     {
       label: "Pending Tasks",
-      val: 12,
+      val: pendingTasks,
     },
   ];
 
@@ -144,35 +175,26 @@ export default function Dashboard() {
             </h3>
 
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 rounded-xl bg-slate-50 border">
-                <div>
-                  <h4 className="font-semibold text-slate-900">John Perera</h4>
-
-                  <p className="text-sm text-slate-500">Teeth Cleaning</p>
+              {todayAppointments.length === 0 ? (
+                <div className="p-8 text-center text-slate-500 font-medium bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                  No appointments scheduled for today.
                 </div>
+              ) : (
+                todayAppointments.map((appt) => (
+                  <div key={appt._id} className="flex justify-between items-center p-4 rounded-xl bg-slate-50 border">
+                    <div>
+                      <h4 className="font-semibold text-slate-900">{appt.patient?.name || 'Unknown Patient'}</h4>
 
-                <span className="font-semibold text-blue-700">09:30 AM</span>
-              </div>
+                      <p className="text-sm text-slate-500">{appt.treatment}</p>
+                    </div>
 
-              <div className="flex justify-between items-center p-4 rounded-xl bg-slate-50 border">
-                <div>
-                  <h4 className="font-semibold text-slate-900">Amanda Silva</h4>
-
-                  <p className="text-sm text-slate-500">Root Canal</p>
-                </div>
-
-                <span className="font-semibold text-blue-700">10:45 AM</span>
-              </div>
-
-              <div className="flex justify-between items-center p-4 rounded-xl bg-slate-50 border">
-                <div>
-                  <h4 className="font-semibold text-slate-900">Nimal Fernando</h4>
-
-                  <p className="text-sm text-slate-500">Dental Consultation</p>
-                </div>
-
-                <span className="font-semibold text-blue-700">01:15 PM</span>
-              </div>
+                    <div className="text-right">
+                      <span className="font-semibold text-blue-700 block">{appt.time}</span>
+                      <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider">{appt.status}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
