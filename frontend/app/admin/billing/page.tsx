@@ -18,6 +18,13 @@ interface BillItem {
   customName?: string;
 }
 
+interface Dentist {
+  _id: string;
+  fullName: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
 interface Bill {
   _id: string;
   patient: Patient;
@@ -25,6 +32,7 @@ interface Bill {
   treatment: string;
   status: 'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid';
   paymentMethod: 'Cash' | 'Card' | 'N/A';
+  dentist?: Dentist | null;
   items?: BillItem[];
   date: string;
   createdAt: string;
@@ -44,7 +52,9 @@ export default function AdminBillingPage() {
   const [patientId, setPatientId] = useState('');
   const [status, setStatus] = useState<'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid'>('Unpaid');
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'N/A'>('N/A');
-  const [items, setItems] = useState<BillItem[]>([{ name: 'Regular Checkup', cost: 0 }]);
+  const [items, setItems] = useState<BillItem[]>([]);
+  const [dentists, setDentists] = useState<any[]>([]);
+  const [dentistId, setDentistId] = useState('');
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,9 +109,25 @@ export default function AdminBillingPage() {
     }
   };
 
+  const fetchDentists = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/staff`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const dentistsOnly = data.filter((s: any) => s.role === 'dentist');
+        setDentists(dentistsOnly);
+      }
+    } catch (err) {
+      console.error("Error fetching dentists:", err);
+    }
+  };
+
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([fetchBills(), fetchPatients()]);
+    await Promise.all([fetchBills(), fetchPatients(), fetchDentists()]);
     setLoading(false);
   };
 
@@ -186,6 +212,11 @@ export default function AdminBillingPage() {
       cost: Number(item.cost) || 0
     }));
 
+    if (finalItems.length === 0) {
+      alert("Please add at least one item to the invoice.");
+      return;
+    }
+
     if (finalItems.some(i => !i.name || i.cost <= 0)) {
       alert("Please make sure all items have a valid service name and cost greater than 0.");
       return;
@@ -193,7 +224,12 @@ export default function AdminBillingPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const initialStatus = (paymentMethod === 'Card' && status === 'Paid') ? 'Pending' : status;
+      let initialStatus = status;
+      if (paymentMethod === 'Card') {
+        initialStatus = 'Pending';
+      } else if (paymentMethod === 'Cash') {
+        initialStatus = 'Paid';
+      }
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/billing`, {
         method: 'POST',
@@ -205,7 +241,8 @@ export default function AdminBillingPage() {
           patientId,
           status: initialStatus,
           paymentMethod,
-          items: finalItems
+          items: finalItems,
+          dentistId
         })
       });
 
@@ -213,7 +250,7 @@ export default function AdminBillingPage() {
         const data = await res.json();
         const createdBill = data.bill;
 
-        if (paymentMethod === 'Card' && status === 'Paid' && createdBill) {
+        if (paymentMethod === 'Card' && createdBill) {
           const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/billing/${createdBill._id}/checkout-session`, {
             method: 'POST',
             headers: {
@@ -228,12 +265,18 @@ export default function AdminBillingPage() {
           }
         }
 
-        alert("Invoice generated successfully!");
+        if (paymentMethod === 'Cash') {
+          alert("Invoice generated and Cash payment recorded successfully! Confirmation email has been sent to the patient.");
+        } else {
+          alert("Invoice generated successfully!");
+        }
+
         setIsNewModalOpen(false);
         setPatientId('');
         setStatus('Unpaid');
         setPaymentMethod('N/A');
-        setItems([{ name: 'Regular Checkup', cost: 0 }]);
+        setItems([]);
+        setDentistId('');
         fetchBills();
       } else {
         const errData = await res.json();
@@ -267,7 +310,8 @@ export default function AdminBillingPage() {
         body: JSON.stringify({
           status: 'Paid',
           paymentMethod: 'Cash',
-          items: finalItems
+          items: finalItems,
+          dentistId
         })
       });
 
@@ -275,7 +319,8 @@ export default function AdminBillingPage() {
         alert("Payment successful! Confirmation email has been sent to the patient.");
         setIsEditModalOpen(false);
         setSelectedBill(null);
-        setItems([{ name: 'Regular Checkup', cost: 0 }]);
+        setItems([]);
+        setDentistId('');
         fetchBills();
       } else {
         const errData = await res.json();
@@ -310,7 +355,8 @@ export default function AdminBillingPage() {
         body: JSON.stringify({
           status: 'Pending',
           paymentMethod: 'Card',
-          items: finalItems
+          items: finalItems,
+          dentistId
         })
       });
 
@@ -341,12 +387,13 @@ export default function AdminBillingPage() {
     }
   };
 
-  const openEditModal = (bill: Bill) => {
+  const openEditModal = (bill: any) => {
     setSelectedBill(bill);
     setStatus(bill.status);
     setPaymentMethod(bill.paymentMethod || 'N/A');
+    setDentistId(bill.dentist?._id || bill.dentist || '');
     if (bill.items && bill.items.length > 0) {
-      setItems(bill.items.map(item => ({ name: item.name, cost: item.cost })));
+      setItems(bill.items.map((item: any) => ({ name: item.name, cost: item.cost })));
     } else {
       setItems([{ name: bill.treatment, cost: bill.amount }]);
     }
@@ -432,7 +479,7 @@ export default function AdminBillingPage() {
                       </td>
                       <td className="p-4 text-slate-600 text-sm font-medium">
                         {bill.treatment}<br/>
-                        <span className="text-xs text-slate-400 font-normal">Method: {bill.paymentMethod || 'N/A'}</span>
+                        <span className="text-xs text-slate-400 font-normal">Method: {bill.paymentMethod || 'N/A'} | Dentist: Dr. {bill.dentist?.fullName?.replace("Dr. ", "") || 'N/A'}</span>
                       </td>
                       <td className="p-4 text-slate-900 text-sm font-bold text-right">
                         Rs. {bill.amount.toLocaleString()}
@@ -476,6 +523,21 @@ export default function AdminBillingPage() {
 
               <form onSubmit={handleGenerateInvoice} className="space-y-4">
                 <div>
+                  <label className="block text-slate-700 text-sm font-bold mb-1.5">Select Dentist</label>
+                  <select
+                    value={dentistId}
+                    onChange={(e) => setDentistId(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                    required
+                  >
+                    <option value="">-- Choose Dentist --</option>
+                    {dentists.map(d => (
+                      <option key={d._id} value={d._id}>Dr. {d.fullName.replace("Dr. ", "")}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
                   <label className="block text-slate-700 text-sm font-bold mb-1.5">Select Patient</label>
                   <select
                     value={patientId}
@@ -496,62 +558,67 @@ export default function AdminBillingPage() {
                     <label className="block text-slate-700 text-sm font-bold">Billing Items</label>
                     <button
                       type="button"
-                      onClick={() => setItems([...items, { name: 'Regular Checkup', cost: 0 }])}
+                      onClick={() => setItems([...items, { name: '', cost: 0 }])}
                       className="text-xs text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
                     >
                       <Plus size={14} /> Add Item
                     </button>
                   </div>
 
-                  {items.map((item, idx) => (
-                    <div key={idx} className="flex gap-2 items-start bg-slate-50 p-3 rounded-xl border border-slate-100 relative">
-                      <div className="flex-1 space-y-2">
-                        <select
-                          value={item.name}
-                          onChange={(e) => {
-                            const updated = [...items];
-                            updated[idx].name = e.target.value;
-                            setItems(updated);
-                          }}
-                          className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
-                        >
-                          {treatmentsList.map(t => (
-                            <option key={t} value={t}>{t}</option>
-                          ))}
-                        </select>
-
-                        {item.name === 'Custom' && (
-                          <input
-                            type="text"
-                            placeholder="Enter custom treatment type..."
-                            value={item.customName || ''}
+                  {items.length === 0 ? (
+                    <div className="text-center py-6 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-semibold">
+                      No items added yet. Click "+ Add Item" to start.
+                    </div>
+                  ) : (
+                    items.map((item, idx) => (
+                      <div key={idx} className="flex gap-2 items-start bg-slate-50 p-3 rounded-xl border border-slate-100 relative">
+                        <div className="flex-1 space-y-2">
+                          <select
+                            value={item.name}
                             onChange={(e) => {
                               const updated = [...items];
-                              updated[idx].customName = e.target.value;
+                              updated[idx].name = e.target.value;
                               setItems(updated);
                             }}
-                            className="w-full p-2 rounded-lg border border-slate-300 text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                          >
+                            <option value="">-- Choose Service --</option>
+                            {treatmentsList.map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+
+                          {item.name === 'Custom' && (
+                            <input
+                              type="text"
+                              placeholder="Enter custom treatment type..."
+                              value={item.customName || ''}
+                              onChange={(e) => {
+                                const updated = [...items];
+                                updated[idx].customName = e.target.value;
+                                setItems(updated);
+                              }}
+                              className="w-full p-2 rounded-lg border border-slate-300 text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              required
+                            />
+                          )}
+                        </div>
+
+                        <div className="w-28">
+                          <input
+                            type="number"
+                            placeholder="Cost"
+                            value={item.cost || ''}
+                            onChange={(e) => {
+                              const updated = [...items];
+                              updated[idx].cost = parseFloat(e.target.value) || 0;
+                              setItems(updated);
+                            }}
+                            className="w-full p-2.5 rounded-lg border border-slate-300 text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-semibold"
                             required
                           />
-                        )}
-                      </div>
+                        </div>
 
-                      <div className="w-28">
-                        <input
-                          type="number"
-                          placeholder="Cost"
-                          value={item.cost || ''}
-                          onChange={(e) => {
-                            const updated = [...items];
-                            updated[idx].cost = parseFloat(e.target.value) || 0;
-                            setItems(updated);
-                          }}
-                          className="w-full p-2.5 rounded-lg border border-slate-300 text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-semibold"
-                          required
-                        />
-                      </div>
-
-                      {items.length > 1 && (
                         <button
                           type="button"
                           onClick={() => {
@@ -562,9 +629,9 @@ export default function AdminBillingPage() {
                         >
                           <X size={14} />
                         </button>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 {/* Dynamic Total Sum Card */}
@@ -586,26 +653,28 @@ export default function AdminBillingPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 text-sm font-bold mb-1.5">Initial Payment Status</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as any)}
-                    className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                  >
-                    <option value="Unpaid">Unpaid</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Partially Paid">Partially Paid</option>
-                    <option value="Paid">Paid</option>
-                  </select>
-                </div>
+                {paymentMethod === 'N/A' && (
+                  <div>
+                    <label className="block text-slate-700 text-sm font-bold mb-1.5">Initial Payment Status</label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as any)}
+                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                    >
+                      <option value="Unpaid">Unpaid</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Partially Paid">Partially Paid</option>
+                      <option value="Paid">Paid</option>
+                    </select>
+                  </div>
+                )}
 
                 <div className="flex gap-4 pt-4 border-t mt-6">
                   <button
                     type="button"
                     onClick={() => {
                       setIsNewModalOpen(false);
-                      setItems([{ name: 'Regular Checkup', cost: 0 }]);
+                      setItems([]);
                     }}
                     className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer"
                   >
@@ -615,7 +684,7 @@ export default function AdminBillingPage() {
                     type="submit"
                     className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md shadow-blue-100 cursor-pointer"
                   >
-                    Generate
+                    {paymentMethod === 'N/A' ? 'Generate' : 'Pay Now'}
                   </button>
                 </div>
               </form>
@@ -640,13 +709,28 @@ export default function AdminBillingPage() {
               </div>
 
               <div className="space-y-4">
+                <div>
+                  <label className="block text-slate-700 text-sm font-bold mb-1.5">Select Dentist</label>
+                  <select
+                    value={dentistId}
+                    onChange={(e) => setDentistId(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                    required
+                  >
+                    <option value="">-- Choose Dentist --</option>
+                    {dentists.map(d => (
+                      <option key={d._id} value={d._id}>Dr. {d.fullName.replace("Dr. ", "")}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Itemized list editor */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <label className="block text-slate-700 text-sm font-bold">Billing Items</label>
                     <button
                       type="button"
-                      onClick={() => setItems([...items, { name: 'Regular Checkup', cost: 0 }])}
+                      onClick={() => setItems([...items, { name: '', cost: 0 }])}
                       className="text-xs text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
                     >
                       <Plus size={14} /> Add Item
@@ -747,7 +831,7 @@ export default function AdminBillingPage() {
                     onClick={() => {
                       setIsEditModalOpen(false);
                       setSelectedBill(null);
-                      setItems([{ name: 'Regular Checkup', cost: 0 }]);
+                      setItems([]);
                     }}
                     className="w-full py-2.5 mt-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 font-semibold transition cursor-pointer text-sm"
                   >

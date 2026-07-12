@@ -480,7 +480,10 @@ export const updatePatient = async (req, res) => {
 
 export const getBills = async (req, res) => {
   try {
-    const bills = await Billing.find().populate('patient', 'name email phoneNumber').sort({ createdAt: -1 });
+    const bills = await Billing.find()
+      .populate('patient', 'name email phoneNumber')
+      .populate('dentist', 'fullName email phoneNumber')
+      .sort({ createdAt: -1 });
     res.json(bills);
   } catch (error) {
     res.status(500).json({ message: "Server error fetching bills", error: error.message });
@@ -488,7 +491,7 @@ export const getBills = async (req, res) => {
 };
 
 export const createBill = async (req, res) => {
-  const { patientId, amount, treatment, status, paymentMethod, items } = req.body;
+  const { patientId, amount, treatment, status, paymentMethod, items, dentistId } = req.body;
   try {
     const patient = await Patient.findById(patientId);
     if (!patient) {
@@ -509,6 +512,7 @@ export const createBill = async (req, res) => {
       treatment: calculatedTreatment,
       status: status || 'Unpaid',
       paymentMethod: paymentMethod || 'N/A',
+      dentist: dentistId || null,
       items: items || [],
       date: new Date()
     });
@@ -539,7 +543,7 @@ export const createBill = async (req, res) => {
 
 export const updateBill = async (req, res) => {
   const { id } = req.params;
-  const { amount, status, treatment, paymentMethod, items } = req.body;
+  const { amount, status, treatment, paymentMethod, items, dentistId } = req.body;
   try {
     const bill = await Billing.findById(id);
     if (!bill) {
@@ -559,6 +563,7 @@ export const updateBill = async (req, res) => {
 
     if (status !== undefined) bill.status = status;
     if (paymentMethod !== undefined) bill.paymentMethod = paymentMethod;
+    if (dentistId !== undefined) bill.dentist = dentistId || null;
 
     await bill.save();
 

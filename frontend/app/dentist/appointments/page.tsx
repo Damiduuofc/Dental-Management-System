@@ -3,16 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DentistSidebar from "@/components/dentist/Sidebar";
+import PatientDetailsModal from "@/components/PatientDetailsModal";
 import { 
-  Users, 
-  CheckCircle2, 
-  Clock, 
-  Activity, 
-  Bell, 
-  Search,
-  Lock,
-  LogOut,
-  X
+  Calendar, 
+  Search, 
+  Bell,
+  X,
+  Clock,
+  ClipboardList
 } from "lucide-react";
 
 interface UserProfile {
@@ -29,6 +27,7 @@ interface Patient {
   gender: string;
   phoneNumber: string;
   email: string;
+  nic: string;
 }
 
 interface Appointment {
@@ -47,31 +46,36 @@ interface Appointment {
   time: string;
   treatment: string;
   status: string;
+  notes?: string;
+  allergies?: string;
+  complains?: string;
+  onExamination?: string;
+  treatmentPlan?: string;
+  treatmentDone?: string;
 }
 
-export default function DentistDashboard() {
+export default function DentistAppointmentsPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Dynamic API state
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [showOnlyToday, setShowOnlyToday] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
-  // Modals state
+  // States specific to Appointments
+  const [filterDate, setFilterDate] = useState<string>(new Date().toISOString().substring(0, 10));
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  
+  // Reschedule states
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
-  const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
-
-  // Form states for reschedule
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleTime, setRescheduleTime] = useState("09:00 AM");
 
-  // Form states for new appointment
+  // New Appointment states
+  const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
   const [newApptPatientId, setNewApptPatientId] = useState("");
   const [newApptDate, setNewApptDate] = useState("");
   const [newApptTime, setNewApptTime] = useState("09:00 AM");
@@ -132,7 +136,7 @@ export default function DentistDashboard() {
 
       fetchNotifications();
     } catch (error) {
-      console.error("Error loading dentist dashboard data:", error);
+      console.error("Error loading dentist portal data:", error);
     }
   };
 
@@ -270,6 +274,11 @@ export default function DentistDashboard() {
     }
   };
 
+  const getLocalDateString = (utcDateStr: string) => {
+    if (!utcDateStr) return '';
+    return new Date(utcDateStr).toISOString().substring(0, 10);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50">
@@ -278,7 +287,16 @@ export default function DentistDashboard() {
     );
   }
 
-  const dentistName = user?.fullName || "Dentist";
+  const dentistAppointments = appointments.filter(appt => {
+    const dId = typeof appt.dentist === 'string' ? appt.dentist : appt.dentist?._id;
+    return dId === user?.id;
+  });
+
+  const filteredDentistAppointments = dentistAppointments.filter(appt => {
+    if (!filterDate) return true;
+    return getLocalDateString(appt.date) === filterDate;
+  });
+
   const userInitials = user
     ? user.fullName
       .split(" ")
@@ -288,49 +306,20 @@ export default function DentistDashboard() {
       .substring(0, 2)
     : "DR";
 
-  const dentistAppointments = appointments.filter(appt => {
-    const dId = typeof appt.dentist === 'string' ? appt.dentist : appt.dentist?._id;
-    return dId === user?.id;
-  });
-
-  const todayStr = new Date().toDateString();
-  const todayAppointmentsList = dentistAppointments.filter(appt => {
-    return new Date(appt.date).toDateString() === todayStr;
-  });
-
-  const appointmentsToRender = showOnlyToday ? todayAppointmentsList : dentistAppointments;
-
-  const todaysPatientsCount = todayAppointmentsList.length;
-  const completedTodayCount = todayAppointmentsList.filter(appt => appt.status === 'Completed').length;
-  const upcomingToday = todayAppointmentsList
-    .filter(appt => appt.status !== 'Completed' && appt.status !== 'Cancelled')
-    .sort((a, b) => a.time.localeCompare(b.time));
-  const nextApptTime = upcomingToday.length > 0 ? upcomingToday[0].time : "No more today";
-  const totalTreatmentsCount = dentistAppointments.filter(appt => appt.status === 'Completed').length;
-
-  const stats = [
-    { label: "Today's Patients", val: todaysPatientsCount, icon: Users, color: "text-blue-600 bg-blue-50 border-blue-100" },
-    { label: "Completed Today", val: completedTodayCount, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
-    { label: "Next Appointment", val: nextApptTime, icon: Clock, color: "text-amber-600 bg-amber-50 border-amber-100" },
-    { label: "Total Treatments Done", val: totalTreatmentsCount, icon: Activity, color: "text-purple-600 bg-purple-50 border-purple-100" },
-  ];
-
   return (
     <div className="flex min-h-screen bg-slate-50">
       <DentistSidebar />
 
-      {/* Main Content Area */}
       <main className="flex-1 p-8 ml-64 min-h-screen">
         {/* Header */}
         <header className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-black text-slate-900">
-              Welcome back, Dr. {dentistName.replace("Dr. ", "")}
-            </h2>
-            <p className="text-slate-500 mt-1">Here is your clinical overview for today.</p>
+            <h2 className="text-3xl font-black text-slate-900">Appointments Schedule</h2>
+            <p className="text-slate-500 mt-1">Manage and reschedule patient bookings</p>
           </div>
 
           <div className="flex items-center gap-4">
+
             {/* Notification Bell */}
             <div className="relative">
               <button 
@@ -384,133 +373,124 @@ export default function DentistDashboard() {
           </div>
         </header>
 
-        {/* Stats Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-          {stats.map((item, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition flex items-center gap-4"
-            >
-              <div className={`p-4 rounded-2xl border ${item.color}`}>
-                <item.icon size={24} />
-              </div>
-              <div>
-                <h3 className="text-2xl font-black text-slate-900">{item.val}</h3>
-                <p className="text-sm text-slate-500 font-medium">{item.label}</p>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        {/* Core Section */}
-        <section className="space-y-8">
-          {/* Daily Queue */}
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-slate-900">
-                {showOnlyToday ? "Today's Appointment Queue" : "All Assigned Appointments"}
-              </h3>
-              <button
-                onClick={() => setShowOnlyToday(!showOnlyToday)}
-                className="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full border border-blue-100 transition cursor-pointer"
-              >
-                {showOnlyToday ? "Show Other Days" : "Show Today Only"}
-              </button>
+        {/* Schedule Listing View */}
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900">Appointments Schedule</h3>
+              <p className="text-slate-500 text-xs mt-0.5">Filter and manage your assigned appointments.</p>
             </div>
 
-            <div className="space-y-4">
-              {appointmentsToRender.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-sm font-medium">
-                  No appointments scheduled.
-                </div>
-              ) : (
-                appointmentsToRender.map((appt) => (
-                  <div 
-                    key={appt._id} 
-                    className="flex justify-between items-center p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-blue-200 transition"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 font-bold flex items-center justify-center">
-                        {appt.patient?.name ? appt.patient.name.charAt(0) : '?'}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900">{appt.patient?.name || 'Unknown Patient'}</h4>
-                        <p className="text-xs text-slate-500 font-medium">{appt.treatment}</p>
-                        {!showOnlyToday && (
-                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                            Date: {new Date(appt.date).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right min-w-[90px]">
-                        <span className="font-bold text-blue-700 text-sm block">{appt.time}</span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                          appt.status === "Completed" ? "bg-emerald-50 text-emerald-700 border-emerald-255 border-emerald-200" :
-                          appt.status === "Scheduled" || appt.status === "Confirmed" ? "bg-blue-50 text-blue-700 border-blue-255 border-blue-200" :
-                          appt.status === "Cancelled" ? "bg-red-50 text-red-700 border-red-255 border-red-200" :
-                          "bg-amber-50 text-amber-700 border-amber-255 border-amber-200"
-                        }`}>
-                          {appt.status}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedAppt(appt);
-                            setIsDetailsOpen(true);
-                          }}
-                          className="px-2.5 py-1.5 text-xs bg-white border hover:bg-blue-50 border-slate-200 rounded-lg text-slate-600 hover:text-blue-600 transition font-semibold cursor-pointer"
-                        >
-                          Details
-                        </button>
-                        
-                        {appt.status === 'Completed' && (
-                          <button
-                            onClick={() => {
-                              setNewApptPatientId(appt.patient?._id || "");
-                              setIsNewAppointmentOpen(true);
-                            }}
-                            className="px-2.5 py-1.5 text-xs bg-blue-50 border hover:bg-blue-600 hover:text-white border-blue-250 rounded-lg text-blue-600 transition font-semibold cursor-pointer"
-                          >
-                            New Appointment (Next Visit)
-                          </button>
-                        )}
-                        
-                        {appt.status !== 'Completed' && appt.status !== 'Cancelled' && (
-                          <>
-                            <button
-                              onClick={() => {
-                                setSelectedAppt(appt);
-                                const apptDate = new Date(appt.date);
-                                const formattedDate = apptDate.toISOString().substring(0, 10);
-                                setRescheduleDate(formattedDate);
-                                setRescheduleTime(appt.time);
-                                setIsRescheduleOpen(true);
-                              }}
-                              className="px-2.5 py-1.5 text-xs bg-white border hover:bg-amber-50 border-slate-200 rounded-lg text-slate-600 hover:text-amber-600 transition font-semibold cursor-pointer"
-                            >
-                              Reschedule
-                            </button>
-                            <button
-                              onClick={() => handleCancelAppointment(appt._id)}
-                              className="px-2.5 py-1.5 text-xs bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg text-red-600 transition font-semibold cursor-pointer"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
+            {/* Date Filter Picker */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-slate-500">Select Date:</span>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-slate-700 bg-slate-55 bg-slate-50"
+              />
+              {filterDate && (
+                <button
+                  onClick={() => setFilterDate('')}
+                  className="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition cursor-pointer border border-red-100"
+                >
+                  Clear Filter
+                </button>
               )}
             </div>
           </div>
-        </section>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 text-xs uppercase font-semibold">
+                  <th className="p-4 pl-0">Time</th>
+                  <th className="p-4">Date</th>
+                  <th className="p-4">Patient</th>
+                  <th className="p-4">Treatment</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDentistAppointments.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-slate-400 font-medium text-sm">
+                      No appointments found for the selected date.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredDentistAppointments.map((appt) => {
+                    return (
+                      <tr key={appt._id} className="border-b border-slate-50 hover:bg-slate-50/50 transition">
+                        <td className="p-4 pl-0 font-bold text-blue-700 text-sm">{appt.time}</td>
+                        <td className="p-4 text-slate-600 text-sm">
+                          {new Date(appt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                        <td className="p-4">
+                          <span className="font-bold text-slate-900 block">{appt.patient?.name || 'Unknown'}</span>
+                          <span className="text-xs text-slate-400 block mt-0.5">{appt.patient?.email}</span>
+                        </td>
+                        <td className="p-4 text-slate-600 text-sm font-medium">{appt.treatment}</td>
+                        <td className="p-4">
+                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
+                            appt.status === "Completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                            appt.status === "Scheduled" || appt.status === "Confirmed" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                            appt.status === "Cancelled" ? "bg-red-50 text-red-700 border-red-200" :
+                            "bg-amber-50 text-amber-700 border-amber-200"
+                          }`}>
+                            {appt.status}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                const pId = typeof appt.patient === 'string' ? appt.patient : appt.patient?._id;
+                                const fullPatient = patients.find(p => p._id === pId);
+                                if (fullPatient) {
+                                  setSelectedPatient(fullPatient);
+                                  setIsDetailsOpen(true);
+                                } else {
+                                  alert("Patient details not found.");
+                                }
+                              }}
+                              className="px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 font-semibold cursor-pointer"
+                            >
+                              Details
+                            </button>
+                            {appt.status !== 'Completed' && appt.status !== 'Cancelled' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedAppt(appt);
+                                    setRescheduleDate(getLocalDateString(appt.date));
+                                    setRescheduleTime(appt.time);
+                                    setIsRescheduleOpen(true);
+                                  }}
+                                  className="px-2.5 py-1.5 text-xs bg-white border hover:bg-amber-50 border-slate-200 rounded-lg text-slate-600 hover:text-amber-600 transition font-semibold cursor-pointer"
+                                >
+                                  Reschedule
+                                </button>
+                                <button
+                                  onClick={() => handleCancelAppointment(appt._id)}
+                                  className="px-2.5 py-1.5 text-xs bg-red-50 hover:bg-red-100 border border-red-100 rounded-lg text-red-600 transition font-semibold cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </main>
 
       {/* Reschedule Modal */}
@@ -674,63 +654,15 @@ export default function DentistDashboard() {
         </div>
       )}
 
-      {/* View Details Modal */}
-      {isDetailsOpen && selectedAppt && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Appointment Details</h2>
-            <p className="text-slate-500 text-sm mb-6">Full summary of the booked treatment session.</p>
-
-            <div className="space-y-4 text-sm text-slate-700 font-medium">
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-400 font-normal">Patient Name:</span>
-                <span className="text-slate-900 font-bold">{selectedAppt.patient?.name || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-400 font-normal">Patient Email:</span>
-                <span className="text-slate-900">{selectedAppt.patient?.email || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-400 font-normal">Phone Number:</span>
-                <span className="text-slate-900">{selectedAppt.patient?.phoneNumber || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-400 font-normal">Treatment / Service:</span>
-                <span className="text-blue-700 font-bold">{selectedAppt.treatment}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-400 font-normal">Date:</span>
-                <span className="text-slate-900">{new Date(selectedAppt.date).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-400 font-normal">Time Slot:</span>
-                <span className="text-slate-900">{selectedAppt.time}</span>
-              </div>
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-slate-400 font-normal">Status:</span>
-                <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                  selectedAppt.status === "Completed" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
-                  selectedAppt.status === "Scheduled" ? "bg-blue-50 text-blue-700 border border-blue-100" :
-                  selectedAppt.status === "Cancelled" ? "bg-red-50 text-red-700 border border-red-100" :
-                  "bg-amber-50 text-amber-700 border border-amber-100"
-                }`}>{selectedAppt.status}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={() => {
-                  setIsDetailsOpen(false);
-                  setSelectedAppt(null);
-                }}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition cursor-pointer text-sm"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Patient Details Check-In Style Modal */}
+      <PatientDetailsModal
+        isOpen={isDetailsOpen}
+        onClose={() => {
+          setIsDetailsOpen(false);
+          setSelectedPatient(null);
+        }}
+        patient={selectedPatient}
+      />
     </div>
   );
 }

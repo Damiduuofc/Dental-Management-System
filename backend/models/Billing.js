@@ -24,6 +24,11 @@ const billingSchema = new mongoose.Schema({
     enum: ['Cash', 'Card', 'N/A'],
     default: 'N/A'
   },
+  dentist: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
+  },
   items: [{
     name: { type: String, required: true },
     cost: { type: Number, required: true }
