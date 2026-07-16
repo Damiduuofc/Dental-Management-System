@@ -384,7 +384,9 @@ export const markNotificationAsRead = async (req, res) => {
 
 export const getBills = async (req, res) => {
   try {
-    const bills = await Billing.find({ patient: req.user.id }).sort({ createdAt: -1 });
+    const bills = await Billing.find({ patient: req.user.id })
+      .populate("dentist", "fullName email phoneNumber")
+      .sort({ createdAt: -1 });
     res.json(bills);
   } catch (error) {
     res.status(500).json({ message: "Server error fetching bills", error: error.message });

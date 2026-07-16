@@ -5,9 +5,15 @@ import {
   CreditCard,
   Shield,
   Check,
-  Search
+  Search,
+  ChevronDown
 } from "lucide-react";
 import PatientSidebar from "@/components/patient/Sidebar";
+
+interface BillItem {
+  name: string;
+  cost: number;
+}
 
 interface Bill {
   _id: string;
@@ -16,12 +22,20 @@ interface Bill {
   status: 'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid';
   paymentMethod?: 'Cash' | 'Card' | 'N/A';
   date: string;
+  dentist?: {
+    _id: string;
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+  };
+  items?: BillItem[];
 }
 
 export default function PatientBilling() {
   const [patient, setPatient] = useState<any>(null);
   const [bills, setBills] = useState<Bill[]>([]);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
+  const [expandedBillId, setExpandedBillId] = useState<string | null>(null);
 
   const fetchPatientData = async () => {
     try {
@@ -182,42 +196,106 @@ export default function PatientBilling() {
                   No billing statements found.
                 </div>
               ) : (
-                bills.map((bill) => (
-                  <div key={bill._id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition flex items-center justify-between flex-wrap gap-4">
-                    <div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
-                        bill.status === 'Paid' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'
-                      }`}>
-                        {bill.status}
-                      </span>
-                      <h4 className="font-bold text-lg text-slate-800 mt-2">{bill.treatment}</h4>
-                      <p className="text-xs text-slate-400 mt-1 font-semibold">Date: {new Date(bill.date).toLocaleDateString()} | Method: {bill.paymentMethod || 'N/A'}</p>
-                    </div>
+                bills.map((bill) => {
+                  const isExpanded = expandedBillId === bill._id;
+                  return (
+                    <div key={bill._id} className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition overflow-hidden">
+                      {/* Main Card Header (Row) */}
+                      <div className="p-6 flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex-1 min-w-[200px]">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
+                            bill.status === 'Paid' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'
+                          }`}>
+                            {bill.status}
+                          </span>
+                          <h4 className="font-bold text-lg text-slate-800 mt-2">{bill.treatment}</h4>
+                          <p className="text-xs text-slate-400 mt-1 font-semibold">
+                            Date: {new Date(bill.date).toLocaleDateString()} | Method: {bill.paymentMethod || 'N/A'}
+                          </p>
+                        </div>
 
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-slate-400 uppercase">Amount Due</p>
-                        <p className="text-xl font-black text-slate-800 mt-0.5">Rs. {bill.amount.toLocaleString()}</p>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-xs font-bold text-slate-400 uppercase">Amount Due</p>
+                            <p className="text-xl font-black text-slate-800 mt-0.5">Rs. {bill.amount.toLocaleString()}</p>
+                          </div>
+
+                          {bill.status === 'Unpaid' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePayBill(bill._id);
+                              }}
+                              disabled={paymentLoading === bill._id}
+                              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shadow-md shadow-blue-100 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              <CreditCard size={16} />
+                              {paymentLoading === bill._id ? "Processing..." : "Pay Now"}
+                            </button>
+                          )}
+                          {bill.status === 'Paid' && (
+                            <span className="bg-green-100 text-green-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1 border border-green-200">
+                              <Check size={14} /> Settled
+                            </span>
+                          )}
+
+                          {/* Toggle Expand Details */}
+                          <button
+                            onClick={() => setExpandedBillId(isExpanded ? null : bill._id)}
+                            className="p-2 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                          >
+                            <ChevronDown size={18} className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </button>
+                        </div>
                       </div>
 
-                      {bill.status === 'Unpaid' && (
-                        <button
-                          onClick={() => handlePayBill(bill._id)}
-                          disabled={paymentLoading === bill._id}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition shadow-md shadow-blue-100 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                          <CreditCard size={16} />
-                          {paymentLoading === bill._id ? "Processing..." : "Pay Now"}
-                        </button>
-                      )}
-                      {bill.status === 'Paid' && (
-                        <span className="bg-green-100 text-green-700 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1 border border-green-200">
-                          <Check size={14} /> Settled
-                        </span>
+                      {/* Expandable Details Container */}
+                      {isExpanded && (
+                        <div className="bg-slate-50/50 border-t border-slate-100 p-6 space-y-4">
+                          {bill.dentist && (
+                            <div>
+                              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Treating Dentist</p>
+                              <div className="flex items-center gap-3 mt-2 bg-white p-3 rounded-2xl border border-slate-100 w-fit">
+                                <img
+                                  src={`https://ui-avatars.com/api/?name=${bill.dentist.fullName}&background=0ea5e9&color=fff`}
+                                  className="w-9 h-9 rounded-full shadow"
+                                  alt="Dentist Profile"
+                                />
+                                <div>
+                                  <p className="text-sm font-bold text-slate-800">Dr. {bill.dentist.fullName}</p>
+                                  <p className="text-xs text-slate-505 text-slate-500 font-semibold">{bill.dentist.email} • {bill.dentist.phoneNumber}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Itemized Services & Treatment Breakdown</p>
+                            {bill.items && bill.items.length > 0 ? (
+                              <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden divide-y divide-slate-100 max-w-xl">
+                                {bill.items.map((item, idx) => (
+                                  <div key={idx} className="flex justify-between items-center px-4 py-3 text-sm">
+                                    <span className="font-semibold text-slate-700">{item.name}</span>
+                                    <span className="font-bold text-slate-900">Rs. {item.cost.toLocaleString()}</span>
+                                  </div>
+                                ))}
+                                <div className="flex justify-between items-center px-4 py-3.5 bg-slate-50/50 text-sm font-black border-t">
+                                  <span className="text-slate-800">Total Invoice Amount</span>
+                                  <span className="text-blue-600">Rs. {bill.amount.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-white rounded-2xl border border-slate-100 p-4 flex justify-between items-center text-sm font-semibold text-slate-700 max-w-xl">
+                                <span>{bill.treatment}</span>
+                                <span className="font-bold text-slate-900">Rs. {bill.amount.toLocaleString()}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 

@@ -11,6 +11,7 @@ import {
   RefreshControl,
   Modal,
   FlatList,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -240,7 +241,17 @@ export default function HomeScreen() {
         {/* 4-Icon Grid */}
         <View style={styles.grid}>
           {menuItems.map((item, index) => (
-            <TouchableOpacity key={index} style={styles.menuItem}>
+            <TouchableOpacity 
+              key={index} 
+              style={styles.menuItem}
+              onPress={() => {
+                if (item.name === 'Payments') {
+                  router.push('/payments' as any);
+                } else {
+                  Alert.alert('Info', `${item.name.replace('\n', ' ')} feature is available in the Web Portal.`);
+                }
+              }}
+            >
               <View style={styles.iconBox}>
                 <Ionicons name={item.icon as any} size={28} color="#0EA5E9" />
               </View>
