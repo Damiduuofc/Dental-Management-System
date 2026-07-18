@@ -313,7 +313,7 @@ export default function DentistProfilePage() {
                     type="text"
                     required
                     value={editForm.phoneNumber}
-                    onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value })}
+                    onChange={(e) => setEditForm({ ...editForm, phoneNumber: e.target.value.replace(/\D/g, '') })}
                     className="w-full p-3 rounded-xl border border-slate-350 border-slate-205 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800 bg-slate-50/50"
                   />
                 </div>

@@ -626,23 +626,7 @@ export default function DentistDashboard() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-slate-700 text-sm font-bold mb-1.5">Treatment / Service</label>
-                <select
-                  value={newApptTreatment}
-                  onChange={(e) => setNewApptTreatment(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
-                  required
-                >
-                  <option value="Regular Checkup">Regular Checkup</option>
-                  <option value="Teeth Cleaning">Teeth Cleaning</option>
-                  <option value="Dental Consultation">Dental Consultation</option>
-                  <option value="Root Canal">Root Canal</option>
-                  <option value="Tooth Extraction">Tooth Extraction</option>
-                  <option value="Dental Filling">Dental Filling</option>
-                  <option value="Braces Adjustment">Braces Adjustment</option>
-                </select>
-              </div>
+
 
               <div>
                 <label className="block text-slate-700 text-sm font-bold mb-1.5">Notes (Optional)</label>

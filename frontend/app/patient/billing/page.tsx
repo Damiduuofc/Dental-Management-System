@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   CreditCard,
   Shield,
@@ -18,6 +18,8 @@ interface BillItem {
 interface Bill {
   _id: string;
   amount: number;
+  amountPaid?: number;
+  dueAmount?: number;
   treatment: string;
   status: 'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid';
   paymentMethod?: 'Cash' | 'Card' | 'N/A';
@@ -36,6 +38,9 @@ export default function PatientBilling() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
   const [expandedBillId, setExpandedBillId] = useState<string | null>(null);
+
+  // Duplicate payment ref guard
+  const paymentConfirmedRef = useRef(false);
 
   const fetchPatientData = async () => {
     try {
@@ -87,19 +92,46 @@ export default function PatientBilling() {
       const isCancel = searchParams.get('payment_cancel') === 'true';
       const successBillId = searchParams.get('bill_id');
       if (isSuccess && successBillId) {
+        if (paymentConfirmedRef.current) return;
+        paymentConfirmedRef.current = true;
+
+        // Clean query params immediately
+        window.history.replaceState({}, document.title, window.location.pathname);
+
         const confirmPayment = async () => {
           try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing/${successBillId}/pay`, {
-              method: 'PUT',
-              headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-              }
+            const billsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing`, {
+              headers: { "Authorization": `Bearer ${token}` }
             });
-            if (res.ok) {
-              alert("Payment successful! Confirmation email has been sent.");
-              window.history.replaceState({}, document.title, window.location.pathname);
-              fetchBills();
+            if (billsRes.ok) {
+              const billsList = await billsRes.json();
+              const bill = billsList.find((b: any) => b._id === successBillId);
+              if (bill) {
+                const amountPaidParam = searchParams.get('amount_paid');
+                const newlyPaid = amountPaidParam ? Number(amountPaidParam) : (bill.dueAmount !== undefined ? bill.dueAmount : bill.amount);
+                const updatedAmountPaid = (bill.amountPaid || 0) + newlyPaid;
+                const updatedDueAmount = Math.max(0, bill.amount - updatedAmountPaid);
+                const updatedStatus = updatedDueAmount === 0 ? 'Paid' : 'Partially Paid';
+
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing/${successBillId}/pay`, {
+                  method: 'PUT',
+                  headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    status: updatedStatus,
+                    paymentMethod: 'Card',
+                    amountPaid: updatedAmountPaid,
+                    dueAmount: updatedDueAmount
+                  })
+                });
+                if (res.ok) {
+                  alert("Payment successful! Confirmation email has been sent.");
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                  fetchBills();
+                }
+              }
             }
           } catch (error) {
             console.error("Error confirming payment:", error);
@@ -140,7 +172,7 @@ export default function PatientBilling() {
 
   const outstandingBalance = bills
     .filter(b => b.status === 'Unpaid' || b.status === 'Pending' || b.status === 'Partially Paid')
-    .reduce((sum, b) => sum + b.amount, 0);
+    .reduce((sum, b) => sum + (b.dueAmount !== undefined ? b.dueAmount : b.amount), 0);
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
@@ -204,7 +236,10 @@ export default function PatientBilling() {
                       <div className="p-6 flex items-center justify-between flex-wrap gap-4">
                         <div className="flex-1 min-w-[200px]">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
-                            bill.status === 'Paid' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'
+                            bill.status === 'Paid' ? 'bg-green-50 border-green-200 text-green-700' :
+                            bill.status === 'Partially Paid' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                            bill.status === 'Pending' ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                            'bg-red-50 border-red-200 text-red-700'
                           }`}>
                             {bill.status}
                           </span>
@@ -217,10 +252,13 @@ export default function PatientBilling() {
                         <div className="flex items-center gap-4">
                           <div className="text-right">
                             <p className="text-xs font-bold text-slate-400 uppercase">Amount Due</p>
-                            <p className="text-xl font-black text-slate-800 mt-0.5">Rs. {bill.amount.toLocaleString()}</p>
+                            <p className="text-xl font-black text-slate-800 mt-0.5">Rs. {(bill.dueAmount !== undefined ? bill.dueAmount : (bill.status === 'Paid' ? 0 : bill.amount)).toLocaleString()}</p>
+                            {bill.amountPaid !== undefined && bill.amountPaid > 0 && (
+                              <p className="text-[10px] text-slate-400 font-medium">Total: Rs. {bill.amount.toLocaleString()}</p>
+                            )}
                           </div>
 
-                          {bill.status === 'Unpaid' && (
+                          {(bill.status === 'Unpaid' || bill.status === 'Partially Paid') && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

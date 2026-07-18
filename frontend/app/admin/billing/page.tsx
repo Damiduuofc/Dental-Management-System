@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, CreditCard, Edit, Check, X, ShieldAlert } from 'lucide-react';
 import Sidebar from '@/components/admin/Sidebar';
@@ -29,6 +29,8 @@ interface Bill {
   _id: string;
   patient: Patient;
   amount: number;
+  amountPaid?: number;
+  dueAmount?: number;
   treatment: string;
   status: 'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid';
   paymentMethod: 'Cash' | 'Card' | 'N/A';
@@ -49,12 +51,27 @@ export default function AdminBillingPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   
+  // Duplicate payment ref guard
+  const paymentConfirmedRef = useRef(false);
+
+  // Search-as-you-type selectors states
+  const [patientSearch, setPatientSearch] = useState('');
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [dentistSearch, setDentistSearch] = useState('');
+  const [showDentistDropdown, setShowDentistDropdown] = useState(false);
+  
   const [patientId, setPatientId] = useState('');
   const [status, setStatus] = useState<'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid'>('Unpaid');
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Card' | 'N/A'>('N/A');
   const [items, setItems] = useState<BillItem[]>([]);
   const [dentists, setDentists] = useState<any[]>([]);
   const [dentistId, setDentistId] = useState('');
+
+  // Payment choice modal states
+  const [showPaymentChoiceModal, setShowPaymentChoiceModal] = useState(false);
+  const [amountToPayNow, setAmountToPayNow] = useState<number>(0);
+  const [payNowMethod, setPayNowMethod] = useState<'Cash' | 'Card'>('Cash');
+  const [payNowOrLater, setPayNowOrLater] = useState<'now' | 'later' | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -154,23 +171,47 @@ export default function AdminBillingPage() {
         const isSuccess = searchParams.get('payment_success') === 'true';
         const successBillId = searchParams.get('bill_id');
         if (isSuccess && successBillId) {
+          if (paymentConfirmedRef.current) return;
+          paymentConfirmedRef.current = true;
+
+          // Clean query params immediately
+          window.history.replaceState({}, document.title, window.location.pathname);
+
           const confirmPayment = async () => {
             try {
-              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/billing/${successBillId}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  status: 'Paid',
-                  paymentMethod: 'Card'
-                })
+              const billsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/billing`, {
+                headers: { 'Authorization': `Bearer ${token}` }
               });
-              if (res.ok) {
-                alert("Card payment recorded successfully! Confirmation email has been sent.");
-                window.history.replaceState({}, document.title, window.location.pathname);
-                fetchBills();
+              if (billsRes.ok) {
+                const billsList = await billsRes.json();
+                const bill = billsList.find((b: any) => b._id === successBillId);
+                if (bill) {
+                  const amountPaidParam = searchParams.get('amount_paid');
+                  const newlyPaid = amountPaidParam ? Number(amountPaidParam) : bill.amount;
+                  
+                  const updatedAmountPaid = (bill.amountPaid || 0) + newlyPaid;
+                  const updatedDueAmount = Math.max(0, bill.amount - updatedAmountPaid);
+                  const updatedStatus = updatedDueAmount === 0 ? 'Paid' : 'Partially Paid';
+
+                  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/billing/${successBillId}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                      status: updatedStatus,
+                      paymentMethod: 'Card',
+                      amountPaid: updatedAmountPaid,
+                      dueAmount: updatedDueAmount
+                    })
+                  });
+                  if (res.ok) {
+                    alert("Card payment recorded successfully! Confirmation email has been sent.");
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    fetchBills();
+                  }
+                }
               }
             } catch (error) {
               console.error("Error confirming payment:", error);
@@ -206,7 +247,6 @@ export default function AdminBillingPage() {
       alert("Please select a patient.");
       return;
     }
-
     const finalItems = items.map(item => ({
       name: item.name === 'Custom' ? (item.customName || 'Custom Service') : item.name,
       cost: Number(item.cost) || 0
@@ -222,15 +262,46 @@ export default function AdminBillingPage() {
       return;
     }
 
+    const total = finalItems.reduce((sum, item) => sum + item.cost, 0);
+    setAmountToPayNow(total);
+    setPayNowMethod('Cash');
+    setPayNowOrLater(null);
+    setShowPaymentChoiceModal(true);
+  };
+
+  const submitBillCreation = async (choice: 'now' | 'later') => {
+    const finalItems = items.map(item => ({
+      name: item.name === 'Custom' ? (item.customName || 'Custom Service') : item.name,
+      cost: Number(item.cost) || 0
+    }));
+    const total = finalItems.reduce((sum, item) => sum + item.cost, 0);
+
+    let finalStatus: 'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid' = 'Unpaid';
+    let finalPaymentMethod: 'Cash' | 'Card' | 'N/A' = 'N/A';
+    let finalAmountPaid = 0;
+    let finalDueAmount = total;
+
+    if (choice === 'now') {
+      finalPaymentMethod = payNowMethod;
+      if (payNowMethod === 'Cash') {
+        finalAmountPaid = amountToPayNow;
+        finalDueAmount = Math.max(0, total - amountToPayNow);
+        if (finalDueAmount === 0) {
+          finalStatus = 'Paid';
+        } else if (finalAmountPaid > 0) {
+          finalStatus = 'Partially Paid';
+        } else {
+          finalStatus = 'Unpaid';
+        }
+      } else {
+        finalStatus = 'Pending';
+        finalAmountPaid = 0;
+        finalDueAmount = total;
+      }
+    }
+
     try {
       const token = localStorage.getItem("token");
-      let initialStatus = status;
-      if (paymentMethod === 'Card') {
-        initialStatus = 'Pending';
-      } else if (paymentMethod === 'Cash') {
-        initialStatus = 'Paid';
-      }
-
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/billing`, {
         method: 'POST',
         headers: {
@@ -239,10 +310,12 @@ export default function AdminBillingPage() {
         },
         body: JSON.stringify({
           patientId,
-          status: initialStatus,
-          paymentMethod,
+          status: finalStatus,
+          paymentMethod: finalPaymentMethod,
           items: finalItems,
-          dentistId
+          dentistId,
+          amountPaid: finalAmountPaid,
+          dueAmount: finalDueAmount
         })
       });
 
@@ -250,13 +323,16 @@ export default function AdminBillingPage() {
         const data = await res.json();
         const createdBill = data.bill;
 
-        if (paymentMethod === 'Card' && createdBill) {
+        if (choice === 'now' && payNowMethod === 'Card' && createdBill) {
           const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/billing/${createdBill._id}/checkout-session`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+              amountToPay: amountToPayNow
+            })
           });
           if (checkRes.ok) {
             const { url } = await checkRes.json();
@@ -265,13 +341,14 @@ export default function AdminBillingPage() {
           }
         }
 
-        if (paymentMethod === 'Cash') {
+        if (choice === 'now' && payNowMethod === 'Cash') {
           alert("Invoice generated and Cash payment recorded successfully! Confirmation email has been sent to the patient.");
         } else {
           alert("Invoice generated successfully!");
         }
 
         setIsNewModalOpen(false);
+        setShowPaymentChoiceModal(false);
         setPatientId('');
         setStatus('Unpaid');
         setPaymentMethod('N/A');
@@ -289,6 +366,7 @@ export default function AdminBillingPage() {
   };
 
   const handlePayCash = async (billId: string) => {
+    if (!selectedBill) return;
     const finalItems = items.map(item => ({
       name: item.name === 'Custom' ? (item.customName || 'Custom Service') : item.name,
       cost: Number(item.cost) || 0
@@ -299,6 +377,11 @@ export default function AdminBillingPage() {
       return;
     }
 
+    const newlyPaid = amountToPayNow;
+    const updatedAmountPaid = (selectedBill.amountPaid || 0) + newlyPaid;
+    const updatedDueAmount = Math.max(0, selectedBill.amount - updatedAmountPaid);
+    const updatedStatus = updatedDueAmount === 0 ? 'Paid' : 'Partially Paid';
+
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/billing/${billId}`, {
@@ -308,10 +391,12 @@ export default function AdminBillingPage() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          status: 'Paid',
+          status: updatedStatus,
           paymentMethod: 'Cash',
           items: finalItems,
-          dentistId
+          dentistId,
+          amountPaid: updatedAmountPaid,
+          dueAmount: updatedDueAmount
         })
       });
 
@@ -371,7 +456,10 @@ export default function AdminBillingPage() {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          amountToPay: amountToPayNow
+        })
       });
       
       if (checkRes.ok) {
@@ -391,12 +479,21 @@ export default function AdminBillingPage() {
     setSelectedBill(bill);
     setStatus(bill.status);
     setPaymentMethod(bill.paymentMethod || 'N/A');
-    setDentistId(bill.dentist?._id || bill.dentist || '');
+    const dId = bill.dentist?._id || bill.dentist || '';
+    setDentistId(dId);
+    const dentistObj = dentists.find(d => d._id === dId);
+    if (dentistObj) {
+      setDentistSearch(`Dr. ${dentistObj.fullName.replace("Dr. ", "")}`);
+    } else {
+      setDentistSearch('');
+    }
     if (bill.items && bill.items.length > 0) {
       setItems(bill.items.map((item: any) => ({ name: item.name, cost: item.cost })));
     } else {
       setItems([{ name: bill.treatment, cost: bill.amount }]);
     }
+    const due = bill.dueAmount !== undefined ? bill.dueAmount : bill.amount;
+    setAmountToPayNow(due);
     setIsEditModalOpen(true);
   };
 
@@ -432,7 +529,14 @@ export default function AdminBillingPage() {
             <p className="text-slate-500 mt-1">Generate itemized dental invoices and track payment balances.</p>
           </div>
           <button 
-            onClick={() => setIsNewModalOpen(true)}
+            onClick={() => {
+              setPatientSearch('');
+              setDentistSearch('');
+              setPatientId('');
+              setDentistId('');
+              setItems([]);
+              setIsNewModalOpen(true);
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 font-semibold shadow-lg shadow-blue-100 transition cursor-pointer"
           >
             <Plus size={20} /> Generate Invoice
@@ -483,6 +587,9 @@ export default function AdminBillingPage() {
                       </td>
                       <td className="p-4 text-slate-900 text-sm font-bold text-right">
                         Rs. {bill.amount.toLocaleString()}
+                        <div className="text-[10px] text-slate-400 font-normal mt-0.5">
+                          Paid: Rs. {(bill.amountPaid || 0).toLocaleString()} | Due: Rs. {(bill.dueAmount !== undefined ? bill.dueAmount : (bill.status === 'Paid' ? 0 : bill.amount)).toLocaleString()}
+                        </div>
                       </td>
                       <td className="p-4 text-sm">
                         <span className={`text-xs px-3 py-1 rounded-full border font-bold uppercase tracking-wider ${getStatusStyle(bill.status)}`}>
@@ -524,32 +631,86 @@ export default function AdminBillingPage() {
               <form onSubmit={handleGenerateInvoice} className="space-y-4">
                 <div>
                   <label className="block text-slate-700 text-sm font-bold mb-1.5">Select Dentist</label>
-                  <select
-                    value={dentistId}
-                    onChange={(e) => setDentistId(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                    required
-                  >
-                    <option value="">-- Choose Dentist --</option>
-                    {dentists.map(d => (
-                      <option key={d._id} value={d._id}>Dr. {d.fullName.replace("Dr. ", "")}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Type to search dentist..."
+                      value={dentistSearch}
+                      onFocus={() => setShowDentistDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowDentistDropdown(false), 200)}
+                      onChange={(e) => {
+                        setDentistSearch(e.target.value);
+                        setDentistId('');
+                      }}
+                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                      required={!dentistId}
+                    />
+                    {showDentistDropdown && (
+                      <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto z-[70]">
+                        {dentists
+                          .filter(d => d.fullName.toLowerCase().includes(dentistSearch.toLowerCase()))
+                          .map(d => (
+                            <button
+                              key={d._id}
+                              type="button"
+                              onClick={() => {
+                                setDentistId(d._id);
+                                setDentistSearch(`Dr. ${d.fullName.replace("Dr. ", "")}`);
+                                setShowDentistDropdown(false);
+                              }}
+                              className="w-full text-left p-3 hover:bg-slate-50 text-slate-800 font-medium text-sm border-b last:border-b-0 border-slate-100"
+                            >
+                              Dr. {d.fullName.replace("Dr. ", "")}
+                            </button>
+                          ))}
+                        {dentists.filter(d => d.fullName.toLowerCase().includes(dentistSearch.toLowerCase())).length === 0 && (
+                          <div className="p-3 text-slate-400 text-sm text-center">No dentist found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-slate-700 text-sm font-bold mb-1.5">Select Patient</label>
-                  <select
-                    value={patientId}
-                    onChange={(e) => setPatientId(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                    required
-                  >
-                    <option value="">-- Choose Patient --</option>
-                    {patients.map(p => (
-                      <option key={p._id} value={p._id}>{p.name} ({p.email})</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Type to search patient..."
+                      value={patientSearch}
+                      onFocus={() => setShowPatientDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowPatientDropdown(false), 200)}
+                      onChange={(e) => {
+                        setPatientSearch(e.target.value);
+                        setPatientId('');
+                      }}
+                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                      required={!patientId}
+                    />
+                    {showPatientDropdown && (
+                      <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto z-[70]">
+                        {patients
+                          .filter(p => p.name.toLowerCase().includes(patientSearch.toLowerCase()) || p.email.toLowerCase().includes(patientSearch.toLowerCase()))
+                          .map(p => (
+                            <button
+                              key={p._id}
+                              type="button"
+                              onClick={() => {
+                                setPatientId(p._id);
+                                setPatientSearch(`${p.name} (${p.email})`);
+                                setShowPatientDropdown(false);
+                              }}
+                              className="w-full text-left p-3 hover:bg-slate-50 text-slate-800 font-medium text-sm border-b last:border-b-0 border-slate-100"
+                            >
+                              {p.name} <span className="text-slate-400 font-normal">({p.email})</span>
+                            </button>
+                          ))}
+                        {patients.filter(p => p.name.toLowerCase().includes(patientSearch.toLowerCase()) || p.email.toLowerCase().includes(patientSearch.toLowerCase())).length === 0 && (
+                          <div className="p-3 text-slate-400 text-sm text-center">No patient found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Itemized list creator */}
@@ -640,35 +801,6 @@ export default function AdminBillingPage() {
                   <p className="text-2xl font-black text-blue-800 mt-0.5">Rs. {totalAmount.toLocaleString()}</p>
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 text-sm font-bold mb-1.5">Payment Method</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as any)}
-                    className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                  >
-                    <option value="N/A">N/A</option>
-                    <option value="Cash">Cash</option>
-                    <option value="Card">Card</option>
-                  </select>
-                </div>
-
-                {paymentMethod === 'N/A' && (
-                  <div>
-                    <label className="block text-slate-700 text-sm font-bold mb-1.5">Initial Payment Status</label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value as any)}
-                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                    >
-                      <option value="Unpaid">Unpaid</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Partially Paid">Partially Paid</option>
-                      <option value="Paid">Paid</option>
-                    </select>
-                  </div>
-                )}
-
                 <div className="flex gap-4 pt-4 border-t mt-6">
                   <button
                     type="button"
@@ -684,7 +816,7 @@ export default function AdminBillingPage() {
                     type="submit"
                     className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md shadow-blue-100 cursor-pointer"
                   >
-                    {paymentMethod === 'N/A' ? 'Generate' : 'Pay Now'}
+                    Generate Invoice
                   </button>
                 </div>
               </form>
@@ -802,10 +934,34 @@ export default function AdminBillingPage() {
                 </div>
 
                 {/* Dynamic Total Sum Card */}
-                <div className="p-4 bg-blue-50 rounded-2xl text-center border border-blue-100 shadow-sm">
-                  <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Total Invoice Sum</span>
-                  <p className="text-2xl font-black text-blue-800 mt-0.5">Rs. {totalAmount.toLocaleString()}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-slate-50 rounded-2xl text-center border border-slate-100 shadow-sm">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Original Total</span>
+                    <p className="text-lg font-black text-slate-700 mt-0.5">Rs. {totalAmount.toLocaleString()}</p>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-2xl text-center border border-blue-100 shadow-sm">
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Remaining Due</span>
+                    <p className="text-lg font-black text-blue-800 mt-0.5">
+                      Rs. {(selectedBill.dueAmount !== undefined ? selectedBill.dueAmount : selectedBill.amount).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
+
+                {selectedBill.status !== 'Paid' && (
+                  <div>
+                    <label className="block text-slate-700 text-xs font-bold uppercase mb-1.5">Installment Amount to Pay Now (Rs.)</label>
+                    <input
+                      type="number"
+                      value={amountToPayNow || ''}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value) || 0);
+                        const maxDue = selectedBill.dueAmount !== undefined ? selectedBill.dueAmount : selectedBill.amount;
+                        setAmountToPayNow(Math.min(maxDue, val));
+                      }}
+                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                    />
+                  </div>
+                )}
 
                 <div className="space-y-3 pt-6 border-t">
                   <label className="block text-slate-500 text-xs font-bold uppercase tracking-wider text-center mb-1">Select Payment Gateway / Method</label>
@@ -814,6 +970,7 @@ export default function AdminBillingPage() {
                       type="button"
                       onClick={() => handlePayCash(selectedBill._id)}
                       className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 transition cursor-pointer text-sm"
+                      disabled={selectedBill.status === 'Paid'}
                     >
                       Pay with Cash
                     </button>
@@ -821,6 +978,7 @@ export default function AdminBillingPage() {
                       type="button"
                       onClick={() => handlePayCard(selectedBill._id)}
                       className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-100 transition cursor-pointer text-sm"
+                      disabled={selectedBill.status === 'Paid'}
                     >
                       Pay with Card
                     </button>
@@ -843,6 +1001,105 @@ export default function AdminBillingPage() {
           </div>
         );
       })()}
+
+      {/* Pay Now / Pay Later Choice Wizard */}
+      {showPaymentChoiceModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+            {payNowOrLater === null ? (
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-slate-900 mb-3">Invoice Generated</h3>
+                <p className="text-slate-500 text-sm mb-6 font-medium">Would you like to record a payment for this invoice now?</p>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setPayNowOrLater('now')}
+                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition text-sm cursor-pointer shadow-lg shadow-blue-100"
+                  >
+                    Pay Now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => submitBillCreation('later')}
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold transition text-sm cursor-pointer"
+                  >
+                    Pay Later
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2 text-center">Record Payment</h3>
+                <p className="text-slate-500 text-sm mb-6 font-medium text-center">Enter payment details to proceed.</p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-slate-700 text-xs font-bold uppercase mb-1.5">Amount to Pay (Rs.)</label>
+                    <input
+                      type="number"
+                      value={amountToPayNow || ''}
+                      onChange={(e) => {
+                        const val = Math.max(0, Number(e.target.value) || 0);
+                        const finalItems = items.map(item => ({
+                          name: item.name === 'Custom' ? (item.customName || 'Custom Service') : item.name,
+                          cost: Number(item.cost) || 0
+                        }));
+                        const total = finalItems.reduce((sum, item) => sum + item.cost, 0);
+                        setAmountToPayNow(Math.min(total, val));
+                      }}
+                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                    />
+                  </div>
+
+                  {(() => {
+                    const finalItems = items.map(item => ({
+                      name: item.name === 'Custom' ? (item.customName || 'Custom Service') : item.name,
+                      cost: Number(item.cost) || 0
+                    }));
+                    const total = finalItems.reduce((sum, item) => sum + item.cost, 0);
+                    const due = Math.max(0, total - amountToPayNow);
+                    return (
+                      <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-xs font-bold text-slate-500 flex justify-between">
+                        <span>REMAINING DUE:</span>
+                        <span className="text-slate-900">Rs. {due.toLocaleString()}</span>
+                      </div>
+                    );
+                  })()}
+
+                  <div>
+                    <label className="block text-slate-700 text-xs font-bold uppercase mb-1.5">Payment Method</label>
+                    <select
+                      value={payNowMethod}
+                      onChange={(e) => setPayNowMethod(e.target.value as any)}
+                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Card">Card</option>
+                    </select>
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t">
+                    <button
+                      type="button"
+                      onClick={() => setPayNowOrLater(null)}
+                      className="flex-1 py-2.5 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 font-semibold transition text-sm cursor-pointer"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => submitBillCreation('now')}
+                      className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition text-sm cursor-pointer shadow-lg shadow-emerald-100"
+                    >
+                      Confirm & Pay
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

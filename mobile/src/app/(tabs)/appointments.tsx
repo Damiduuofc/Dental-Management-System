@@ -43,7 +43,7 @@ export default function AppointmentsScreen() {
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [selectedDentist, setSelectedDentist] = useState('');
-  const [selectedTreatment, setSelectedTreatment] = useState('');
+  const [selectedTreatment, setSelectedTreatment] = useState('Regular Checkup');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [time, setTime] = useState('');
@@ -200,7 +200,7 @@ export default function AppointmentsScreen() {
         setIsBookingOpen(false);
         // Reset states
         setSelectedDentist('');
-        setSelectedTreatment('');
+        setSelectedTreatment('Regular Checkup');
         setDate(new Date());
         setTime('');
         setNotes('');
@@ -371,22 +371,7 @@ export default function AppointmentsScreen() {
                 })}
               </ScrollView>
 
-              {/* Treatment Select */}
-              <Text style={styles.sectionLabel}>Select Treatment</Text>
-              <View style={styles.treatmentRow}>
-                {treatments.map((t) => {
-                  const isSelected = selectedTreatment === t;
-                  return (
-                    <TouchableOpacity 
-                      key={t} 
-                      style={[styles.treatmentBtn, isSelected && styles.activeTreatmentBtn]}
-                      onPress={() => setSelectedTreatment(t)}
-                    >
-                      <Text style={[styles.treatmentBtnText, isSelected && styles.activeTreatmentBtnText]}>{t}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+
 
               {/* Date Selector */}
               <Text style={styles.sectionLabel}>Select Date</Text>

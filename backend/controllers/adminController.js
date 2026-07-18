@@ -491,7 +491,7 @@ export const getBills = async (req, res) => {
 };
 
 export const createBill = async (req, res) => {
-  const { patientId, amount, treatment, status, paymentMethod, items, dentistId } = req.body;
+  const { patientId, amount, treatment, status, paymentMethod, items, dentistId, amountPaid, dueAmount } = req.body;
   try {
     const patient = await Patient.findById(patientId);
     if (!patient) {
@@ -509,6 +509,8 @@ export const createBill = async (req, res) => {
     const bill = await Billing.create({
       patient: patientId,
       amount: calculatedAmount,
+      amountPaid: amountPaid !== undefined ? Number(amountPaid) : 0,
+      dueAmount: dueAmount !== undefined ? Number(dueAmount) : calculatedAmount,
       treatment: calculatedTreatment,
       status: status || 'Unpaid',
       paymentMethod: paymentMethod || 'N/A',
@@ -543,7 +545,7 @@ export const createBill = async (req, res) => {
 
 export const updateBill = async (req, res) => {
   const { id } = req.params;
-  const { amount, status, treatment, paymentMethod, items, dentistId } = req.body;
+  const { amount, status, treatment, paymentMethod, items, dentistId, amountPaid, dueAmount } = req.body;
   try {
     const bill = await Billing.findById(id);
     if (!bill) {
@@ -564,6 +566,8 @@ export const updateBill = async (req, res) => {
     if (status !== undefined) bill.status = status;
     if (paymentMethod !== undefined) bill.paymentMethod = paymentMethod;
     if (dentistId !== undefined) bill.dentist = dentistId || null;
+    if (amountPaid !== undefined) bill.amountPaid = Number(amountPaid);
+    if (dueAmount !== undefined) bill.dueAmount = Number(dueAmount);
 
     await bill.save();
 
@@ -598,11 +602,12 @@ export const getBillingSummary = async (req, res) => {
   try {
     const bills = await Billing.find();
     const totalSales = bills
-      .filter(b => b.status === 'Paid')
-      .reduce((sum, b) => sum + b.amount, 0);
+      .reduce((sum, b) => sum + (b.amountPaid || 0), 0);
     const totalOutstanding = bills
-      .filter(b => b.status === 'Unpaid' || b.status === 'Pending' || b.status === 'Partially Paid')
-      .reduce((sum, b) => sum + b.amount, 0);
+      .reduce((sum, b) => {
+        const due = b.dueAmount !== undefined ? b.dueAmount : (b.status === 'Paid' ? 0 : b.amount);
+        return sum + due;
+      }, 0);
     
     const statusCounts = { Paid: 0, Unpaid: 0, Pending: 0, 'Partially Paid': 0 };
     bills.forEach(b => {
@@ -612,8 +617,9 @@ export const getBillingSummary = async (req, res) => {
 
     const treatmentRevenue = {};
     bills.forEach(b => {
-      if (b.status === 'Paid') {
-        treatmentRevenue[b.treatment] = (treatmentRevenue[b.treatment] || 0) + b.amount;
+      const paid = b.amountPaid || 0;
+      if (paid > 0) {
+        treatmentRevenue[b.treatment] = (treatmentRevenue[b.treatment] || 0) + paid;
       }
     });
 
@@ -631,6 +637,7 @@ export const getBillingSummary = async (req, res) => {
 
 export const createAdminCheckoutSession = async (req, res) => {
   const { id } = req.params;
+  const { amountToPay } = req.body;
   try {
     const bill = await Billing.findById(id);
     if (!bill) {
@@ -638,6 +645,8 @@ export const createAdminCheckoutSession = async (req, res) => {
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+    const chargeAmount = amountToPay !== undefined ? Number(amountToPay) : (bill.dueAmount !== undefined ? bill.dueAmount : bill.amount);
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -647,12 +656,12 @@ export const createAdminCheckoutSession = async (req, res) => {
             name: bill.treatment,
             description: `Dental Treatment Invoice: ${bill.treatment}`,
           },
-          unit_amount: bill.amount * 100, // Stripe expects cents
+          unit_amount: chargeAmount * 100, // Stripe expects cents
         },
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/billing?payment_success=true&bill_id=${id}`,
+      success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/billing?payment_success=true&bill_id=${id}&amount_paid=${chargeAmount}`,
       cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/admin/billing?payment_cancel=true`,
     });
 

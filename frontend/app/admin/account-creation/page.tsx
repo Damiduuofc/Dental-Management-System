@@ -150,7 +150,7 @@ export default function AccountCreationPage() {
               <form onSubmit={handleCreate} className="space-y-4 pt-4">
                 <Input placeholder="Full Name" onChange={e => setFormData({...formData, fullName: e.target.value})} required />
                 <Input placeholder="Email" type="email" onChange={e => setFormData({...formData, email: e.target.value})} required />
-                <Input placeholder="Phone" onChange={e => setFormData({...formData, phoneNumber: e.target.value})} required />
+                <Input placeholder="Phone" value={formData.phoneNumber} onChange={e => setFormData({...formData, phoneNumber: e.target.value.replace(/\D/g, '')})} required />
                 <Select onValueChange={(val) => setFormData({...formData, role: val || 'dentist'})} defaultValue="dentist">
                   <SelectTrigger><SelectValue placeholder="Role" /></SelectTrigger>
                   <SelectContent>

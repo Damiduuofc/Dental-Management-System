@@ -283,7 +283,7 @@ export default function ProfileScreen() {
                 <TextInput
                   style={styles.textInput}
                   value={editPhone}
-                  onChangeText={setEditPhone}
+                  onChangeText={(text) => setEditPhone(text.replace(/[^0-9]/g, ''))}
                   keyboardType="phone-pad"
                   placeholder="Enter phone number"
                 />

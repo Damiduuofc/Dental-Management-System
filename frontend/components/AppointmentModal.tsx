@@ -45,7 +45,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, presele
 
   const [selectedPatient, setSelectedPatient] = useState('');
   const [selectedDentist, setSelectedDentist] = useState('');
-  const [selectedTreatment, setSelectedTreatment] = useState('');
+  const [selectedTreatment, setSelectedTreatment] = useState('Regular Checkup');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
@@ -174,7 +174,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, presele
     } else {
       setSelectedPatient(preselectedPatientId || '');
       setSelectedDentist('');
-      setSelectedTreatment('');
+      setSelectedTreatment('Regular Checkup');
       setDate('');
       setTime('');
       setNotes('');
@@ -416,7 +416,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, presele
                       type="text"
                       placeholder="Enter phone number"
                       value={newPatientPhone}
-                      onChange={(e) => setNewPatientPhone(e.target.value)}
+                      onChange={(e) => setNewPatientPhone(e.target.value.replace(/\D/g, ''))}
                       className="w-full p-3 bg-white rounded-xl border border-slate-200 text-sm font-semibold text-slate-800"
                     />
                   </div>
@@ -516,19 +516,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, presele
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Treatment *</label>
-            <select 
-              value={selectedTreatment}
-              onChange={(e) => setSelectedTreatment(e.target.value)}
-              className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium transition"
-            >
-              <option value="">Select Treatment</option>
-              {treatments.map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
+
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Date *</label>

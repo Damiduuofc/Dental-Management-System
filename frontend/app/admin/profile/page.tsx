@@ -258,7 +258,7 @@ export default function ProfilePage() {
                         type="text"
                         placeholder="Enter contact number"
                         value={phoneNumber}
-                        onChange={e => setPhoneNumber(e.target.value)}
+                        onChange={e => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
                         className="w-full pl-11 pr-4 py-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium"
                       />
                     </div>

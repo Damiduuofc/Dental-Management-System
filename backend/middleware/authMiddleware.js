@@ -38,7 +38,7 @@ export const isAdmin = (req, res, next) => {
  * Call this AFTER verifyToken.
  */
 export const isStaff = (req, res, next) => {
-  if (req.user && ['system_admin', 'assistant', 'dentist'].includes(req.user.role)) {
+  if (req.user && ['system_admin', 'admin', 'assistant', 'dentist'].includes(req.user.role)) {
     next();
   } else {
     return res.status(403).json({ message: "Access denied. Staff only." });
@@ -50,7 +50,7 @@ export const isStaff = (req, res, next) => {
  * Call this AFTER verifyToken.
  */
 export const isAdminOrAssistant = (req, res, next) => {
-  if (req.user && ['system_admin', 'assistant'].includes(req.user.role)) {
+  if (req.user && ['system_admin', 'admin', 'assistant'].includes(req.user.role)) {
     next();
   } else {
     return res.status(403).json({ message: "Access denied. Admin or assistant only." });

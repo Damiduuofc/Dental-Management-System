@@ -123,7 +123,7 @@ export default function PatientSignupPage() {
             {/* Other inputs remain same... */}
             <div>
               <label className="block mb-2 text-sm font-medium">Phone Number</label>
-              <input type="tel" required placeholder="+94XXXXXXXXX" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} className="w-full rounded-lg border px-4 py-3 focus:ring-2 focus:ring-blue-200" />
+              <input type="tel" required placeholder="+94XXXXXXXXX" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value.replace(/\D/g, '') })} className="w-full rounded-lg border px-4 py-3 focus:ring-2 focus:ring-blue-200" />
             </div>
 
             <div>

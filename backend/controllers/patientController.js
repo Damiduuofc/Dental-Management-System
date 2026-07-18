@@ -395,15 +395,19 @@ export const getBills = async (req, res) => {
 
 export const payBill = async (req, res) => {
   const { id } = req.params;
+  const { status, paymentMethod, amountPaid, dueAmount } = req.body;
   try {
-    const bill = await Billing.findOneAndUpdate(
-      { _id: id, patient: req.user.id },
-      { status: 'Paid', paymentMethod: 'Card' },
-      { new: true }
-    );
+    const bill = await Billing.findOne({ _id: id, patient: req.user.id });
     if (!bill) {
       return res.status(404).json({ message: "Bill not found" });
     }
+
+    bill.status = status || 'Paid';
+    bill.paymentMethod = paymentMethod || 'Card';
+    bill.amountPaid = amountPaid !== undefined ? Number(amountPaid) : bill.amount;
+    bill.dueAmount = dueAmount !== undefined ? Number(dueAmount) : 0;
+
+    await bill.save();
 
     // Create notification
     await Notification.create({
@@ -439,6 +443,7 @@ export const createCheckoutSession = async (req, res) => {
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+    const chargeAmount = bill.dueAmount !== undefined ? bill.dueAmount : bill.amount;
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -448,12 +453,12 @@ export const createCheckoutSession = async (req, res) => {
             name: bill.treatment,
             description: `Dental Treatment: ${bill.treatment}`,
           },
-          unit_amount: bill.amount * 100, // Stripe expects cents
+          unit_amount: chargeAmount * 100, // Stripe expects cents
         },
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/patient/billing?payment_success=true&bill_id=${id}`,
+      success_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/patient/billing?payment_success=true&bill_id=${id}&amount_paid=${chargeAmount}`,
       cancel_url: `${process.env.CLIENT_URL || 'http://localhost:3000'}/patient/billing?payment_cancel=true`,
     });
 

@@ -74,7 +74,7 @@ const [gender, setGender] = useState(''); // Added (Male, Female, Other)
           {/* Form Inputs */}
           <View style={styles.inputContainer}><Ionicons name="person-outline" size={20} color="#9CA3AF" style={styles.icon} /><TextInput style={styles.input} placeholder="Full Name" value={name} onChangeText={setName} /></View>
           <View style={styles.inputContainer}><Ionicons name="mail-outline" size={20} color="#9CA3AF" style={styles.icon} /><TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" /></View>
-          <View style={styles.inputContainer}><Ionicons name="call-outline" size={20} color="#9CA3AF" style={styles.icon} /><TextInput style={styles.input} placeholder="Phone Number" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" /></View>
+          <View style={styles.inputContainer}><Ionicons name="call-outline" size={20} color="#9CA3AF" style={styles.icon} /><TextInput style={styles.input} placeholder="Phone Number" value={phoneNumber} onChangeText={(text) => setPhoneNumber(text.replace(/[^0-9]/g, ''))} keyboardType="phone-pad" /></View>
           
           {/* New Fields */}
           <View style={styles.inputContainer}><Ionicons name="card-outline" size={20} color="#9CA3AF" style={styles.icon} /><TextInput style={styles.input} placeholder="NIC Number" value={nic} onChangeText={setNic} /></View>
