@@ -136,7 +136,7 @@ export const getAppointments = async (req, res) => {
   try {
     const filter = patientId ? { patient: patientId } : {};
     const appointments = await Appointment.find(filter)
-      .populate("patient", "name email phoneNumber")
+      .populate("patient", "name email phoneNumber allergies")
       .populate("dentist", "fullName email phoneNumber")
       .sort({ date: 1, time: 1 });
     res.json(appointments);
@@ -178,7 +178,7 @@ export const createAppointment = async (req, res) => {
     await appointment.save();
 
     const populatedAppt = await Appointment.findById(appointment._id)
-      .populate("patient", "name email phoneNumber")
+      .populate("patient", "name email phoneNumber allergies")
       .populate("dentist", "fullName email phoneNumber");
 
     // Generate PDF and Send Confirmation Email
@@ -288,7 +288,7 @@ export const updateAppointment = async (req, res) => {
       id,
       updateData,
       { new: true }
-    ).populate("patient", "name email phoneNumber")
+    ).populate("patient", "name email phoneNumber allergies")
      .populate("dentist", "fullName email phoneNumber");
 
     // Handle Notifications & Billing
@@ -851,7 +851,7 @@ export const checkInPatient = async (req, res) => {
     // Trigger Google Calendar if confirmed
     try {
       const populatedAppt = await Appointment.findById(appt._id)
-        .populate("patient", "name email phoneNumber")
+        .populate("patient", "name email phoneNumber allergies")
         .populate("dentist", "fullName email phoneNumber");
 
       await addToGoogleCalendar({

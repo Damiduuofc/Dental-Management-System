@@ -32,6 +32,7 @@ export default function PatientsPage() {
   const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<Patient | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isCheckInOpen, setIsCheckInOpen] = useState(false);
+  const [appointments, setAppointments] = useState<any[]>([]);
 
   // Installment payment states
   const [bills, setBills] = useState<any[]>([]);
@@ -74,6 +75,27 @@ export default function PatientsPage() {
     }
   };
 
+  const fetchAppointments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/appointments`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppointments(data);
+      }
+    } catch (err) {
+      console.error("Error fetching appointments:", err);
+    }
+  };
+
+  const refreshData = () => {
+    fetchPatients();
+    fetchBills();
+    fetchAppointments();
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
@@ -90,8 +112,7 @@ export default function PatientsPage() {
           router.push("/admin/login");
           return;
         }
-        fetchPatients();
-        fetchBills();
+        refreshData();
       } catch (err) {
         console.error("Error parsing user profile:", err);
         router.push("/admin/login");
@@ -106,6 +127,36 @@ export default function PatientsPage() {
         const due = b.dueAmount !== undefined ? b.dueAmount : (b.status === 'Paid' ? 0 : b.amount);
         return sum + due;
       }, 0);
+  };
+
+  const getPatientBillingSummary = (pId: string) => {
+    const patientBills = bills.filter(b => b.patient?._id === pId || b.patient === pId);
+    const totalBills = patientBills.length;
+    if (totalBills === 0) {
+      return { total: 0, paid: 0, due: 0, statusText: 'No Invoices' };
+    }
+    const totalAmount = patientBills.reduce((sum, b) => sum + (b.amount || 0), 0);
+    const paidAmount = patientBills.reduce((sum, b) => sum + (b.amountPaid || 0), 0);
+    const dueAmount = patientBills.reduce((sum, b) => {
+      const due = b.dueAmount !== undefined ? b.dueAmount : (b.status === 'Paid' ? 0 : b.amount);
+      return sum + due;
+    }, 0);
+    
+    const hasUnpaid = patientBills.some(b => b.status === 'Unpaid' || b.status === 'Partially Paid' || b.status === 'Pending');
+    const statusText = hasUnpaid ? 'Unpaid' : 'Paid';
+    return { total: totalAmount, paid: paidAmount, due: dueAmount, statusText };
+  };
+
+  const getTodayCheckInStatus = (patientId: string) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayAppt = appointments.find(appt => {
+      const pId = appt.patient?._id || appt.patient;
+      if (pId !== patientId) return false;
+      if (!appt.date) return false;
+      const apptDate = new Date(appt.date).toISOString().split('T')[0];
+      return apptDate === todayStr;
+    });
+    return todayAppt && ['Arrived', 'In Progress', 'Completed'].includes(todayAppt.status) ? todayAppt.status : null;
   };
 
   const handleInstallmentSubmit = async () => {
@@ -295,7 +346,7 @@ export default function PatientsPage() {
                     <th className="p-4 font-semibold text-slate-700 text-sm">NIC Number</th>
                     <th className="p-4 font-semibold text-slate-700 text-sm">Gender</th>
                     <th className="p-4 font-semibold text-slate-700 text-sm">Date Registered</th>
-                    <th className="p-4 font-semibold text-slate-700 text-sm text-right">Due Amount</th>
+                    <th className="p-4 font-semibold text-slate-700 text-sm">Billing Details</th>
                     <th className="p-4 font-semibold text-slate-700 text-sm">Status</th>
                     <th className="p-4 font-semibold text-slate-700 text-sm">Actions</th>
                   </tr>
@@ -304,7 +355,14 @@ export default function PatientsPage() {
                   {filteredPatients.map(p => (
                     <tr key={p._id} className="border-b border-slate-50 hover:bg-slate-50/50 transition">
                       <td className="p-4 font-medium text-slate-900 text-sm">
-                        {p.name}<br/>
+                        <div className="flex items-center gap-2">
+                          <span>{p.name}</span>
+                          {getTodayCheckInStatus(p._id) && (
+                            <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-[9px] font-bold uppercase tracking-wider">
+                              Arrived
+                            </span>
+                          )}
+                        </div>
                         <span className="text-xs text-slate-400 font-normal">{calculateAge(p.dob)} years old</span>
                       </td>
                       <td className="p-4 text-slate-600 text-sm">
@@ -315,8 +373,40 @@ export default function PatientsPage() {
                       <td className="p-4 text-slate-600 text-sm font-semibold">{p.nic}</td>
                       <td className="p-4 text-slate-600 text-sm">{p.gender}</td>
                       <td className="p-4 text-slate-600 text-sm">{new Date(p.createdAt).toLocaleDateString()}</td>
-                      <td className="p-4 text-sm font-bold text-right text-slate-900">
-                        Rs. {getPatientDueAmount(p._id).toLocaleString()}
+                      <td className="p-4 text-sm">
+                        {(() => {
+                          const summary = getPatientBillingSummary(p._id);
+                          if (summary.total === 0) {
+                            return <span className="text-slate-400 text-xs">No invoices</span>;
+                          }
+                          return (
+                            <div className="space-y-1 text-xs">
+                              <div className="flex justify-between gap-4">
+                                <span className="text-slate-500">Total:</span>
+                                <span className="font-semibold text-slate-950">Rs. {summary.total.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between gap-4">
+                                <span className="text-slate-500">Paid:</span>
+                                <span className="font-semibold text-emerald-600">Rs. {summary.paid.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between gap-4 border-t border-slate-100 pt-0.5">
+                                <span className="text-slate-700 font-medium">Due:</span>
+                                <span className="font-bold text-slate-950">Rs. {summary.due.toLocaleString()}</span>
+                              </div>
+                              <div className="mt-1">
+                                {summary.statusText === 'Paid' ? (
+                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider">
+                                    Fully Paid
+                                  </span>
+                                ) : (
+                                  <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 uppercase tracking-wider">
+                                    Unpaid / Due
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="p-4 text-sm">
                         <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100">
@@ -333,15 +423,32 @@ export default function PatientsPage() {
                         >
                           View
                         </button>
-                        <button 
-                          onClick={() => {
-                            setSelectedPatient(p);
-                            setIsCheckInOpen(true);
-                          }}
-                          className="text-emerald-600 hover:text-emerald-700 text-sm font-semibold cursor-pointer"
-                        >
-                          Check-In
-                        </button>
+                        {(() => {
+                          const checkInStatus = getTodayCheckInStatus(p._id);
+                          if (checkInStatus) {
+                            return (
+                              <button 
+                                disabled
+                                className="text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-not-allowed flex items-center gap-1"
+                                title={`Patient already checked in (Status: ${checkInStatus})`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                Checked In
+                              </button>
+                            );
+                          }
+                          return (
+                            <button 
+                              onClick={() => {
+                                setSelectedPatient(p);
+                                setIsCheckInOpen(true);
+                              }}
+                              className="text-emerald-600 hover:text-emerald-700 text-sm font-semibold cursor-pointer"
+                            >
+                              Check-In
+                            </button>
+                          );
+                        })()}
                         <button 
                           onClick={() => {
                             setSelectedPatientForEdit(p);
@@ -377,7 +484,7 @@ export default function PatientsPage() {
             setSelectedPatientForEdit(null);
           }} 
           patient={selectedPatientForEdit}
-          onSuccess={fetchPatients}
+          onSuccess={refreshData}
         />
         <PatientDetailsModal
           isOpen={isDetailsOpen}
@@ -394,7 +501,7 @@ export default function PatientsPage() {
             setSelectedPatient(null);
           }}
           patient={selectedPatient}
-          onSuccess={fetchPatients}
+          onSuccess={refreshData}
         />
 
         {/* Installment Payment Modal */}

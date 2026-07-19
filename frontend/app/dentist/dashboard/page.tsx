@@ -12,7 +12,8 @@ import {
   Search,
   Lock,
   LogOut,
-  X
+  X,
+  AlertTriangle
 } from "lucide-react";
 
 interface UserProfile {
@@ -38,6 +39,7 @@ interface Appointment {
     name: string;
     email: string;
     phoneNumber: string;
+    allergies?: string;
   } | null;
   dentist: {
     _id: string;
@@ -47,6 +49,12 @@ interface Appointment {
   time: string;
   treatment: string;
   status: string;
+  notes?: string;
+  allergies?: string;
+  complains?: string;
+  onExamination?: string;
+  treatmentPlan?: string;
+  treatmentDone?: string;
 }
 
 export default function DentistDashboard() {
@@ -434,7 +442,14 @@ export default function DentistDashboard() {
                         {appt.patient?.name ? appt.patient.name.charAt(0) : '?'}
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900">{appt.patient?.name || 'Unknown Patient'}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900">{appt.patient?.name || 'Unknown Patient'}</h4>
+                          {(appt.allergies || appt.patient?.allergies) && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 text-[9px] font-extrabold uppercase tracking-wider">
+                              ⚠️ Allergy: {appt.allergies || appt.patient?.allergies}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-500 font-medium">{appt.treatment}</p>
                         {!showOnlyToday && (
                           <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
@@ -694,11 +709,54 @@ export default function DentistDashboard() {
                 <span className="text-slate-400 font-normal">Status:</span>
                 <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                   selectedAppt.status === "Completed" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
-                  selectedAppt.status === "Scheduled" ? "bg-blue-50 text-blue-700 border border-blue-100" :
+                  selectedAppt.status === "Scheduled" || selectedAppt.status === "Confirmed" ? "bg-blue-50 text-blue-700 border border-blue-100" :
                   selectedAppt.status === "Cancelled" ? "bg-red-50 text-red-700 border border-red-100" :
                   "bg-amber-50 text-amber-700 border border-amber-100"
                 }`}>{selectedAppt.status}</span>
               </div>
+
+              <div className="flex justify-between border-b pb-2">
+                <span className="text-slate-400 font-normal">Allergies:</span>
+                <span className={`text-slate-900 ${selectedAppt.allergies || selectedAppt.patient?.allergies ? 'text-amber-850 bg-amber-50 border border-amber-200 rounded px-2.5 py-0.5 font-bold' : ''}`}>
+                  {selectedAppt.allergies || selectedAppt.patient?.allergies || 'None declared'}
+                </span>
+              </div>
+
+              {(selectedAppt.complains || selectedAppt.onExamination || selectedAppt.treatmentPlan || selectedAppt.treatmentDone || selectedAppt.notes) && (
+                <div className="mt-4 pt-4 border-t border-slate-100 space-y-3 bg-slate-50 p-4 rounded-2xl">
+                  <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Clinical Details</h4>
+                  {selectedAppt.complains && (
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Complains</span>
+                      <p className="text-xs text-slate-800 font-semibold">{selectedAppt.complains}</p>
+                    </div>
+                  )}
+                  {selectedAppt.onExamination && (
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">On Examination</span>
+                      <p className="text-xs text-slate-800 font-semibold">{selectedAppt.onExamination}</p>
+                    </div>
+                  )}
+                  {selectedAppt.treatmentPlan && (
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Proposed Plan</span>
+                      <p className="text-xs text-slate-800 font-semibold">{selectedAppt.treatmentPlan}</p>
+                    </div>
+                  )}
+                  {selectedAppt.treatmentDone && (
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Treatment Done</span>
+                      <p className="text-xs text-slate-800 font-semibold">{selectedAppt.treatmentDone}</p>
+                    </div>
+                  )}
+                  {selectedAppt.notes && (
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Notes</span>
+                      <p className="text-xs text-slate-800 font-semibold italic">"{selectedAppt.notes}"</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end mt-6">

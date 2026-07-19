@@ -37,6 +37,7 @@ interface Appointment {
     name: string;
     email: string;
     phoneNumber: string;
+    allergies?: string;
   } | null;
   dentist: {
     _id: string;
@@ -429,7 +430,14 @@ export default function DentistAppointmentsPage() {
                           {new Date(appt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </td>
                         <td className="p-4">
-                          <span className="font-bold text-slate-900 block">{appt.patient?.name || 'Unknown'}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 block">{appt.patient?.name || 'Unknown'}</span>
+                            {(appt.allergies || appt.patient?.allergies) && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 text-[9px] font-extrabold uppercase tracking-wider">
+                                ⚠️ Allergy: {appt.allergies || appt.patient?.allergies}
+                              </span>
+                            )}
+                          </div>
                           <span className="text-xs text-slate-400 block mt-0.5">{appt.patient?.email}</span>
                         </td>
                         <td className="p-4 text-slate-600 text-sm font-medium">{appt.treatment}</td>

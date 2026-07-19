@@ -66,9 +66,9 @@ export default function LoginPage() {
         <Image
           src="/logo.png"
           alt="Dental Management System"
-          width={180}
-          height={180}
-          style={{ width: 'auto', height: 'auto' }} 
+          width={100}
+          height={100}
+          style={{ width: '100', height: 'auto' }} 
           className="mb-8"
         />
 

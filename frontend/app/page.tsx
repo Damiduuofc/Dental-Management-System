@@ -17,7 +17,7 @@ export default function PatientLoginPage() {
     e.preventDefault();
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(
         `${apiUrl}/api/patient/login`,
         {
@@ -67,10 +67,10 @@ export default function PatientLoginPage() {
         <Image
           src="/logo.png"
           alt="Dental Management System"
-          width={180}
-          height={180}
+          width={100}
+          height={100}
           className="mb-8"
-          style={{ width: "auto", height: "auto" }}
+          style={{ width: "100", height: "auto" }}
         />
 
         <h1 className="text-5xl font-bold text-center leading-tight">

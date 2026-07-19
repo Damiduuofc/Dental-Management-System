@@ -71,10 +71,10 @@ export default function PatientSidebar() {
         <Image 
           src="/logo.png" 
           alt="Dentplus Logo" 
-          width={160} 
-          height={40} 
+          width={100} 
+          height={50} 
           priority
-          style={{ width: 'auto', height: 'auto' }}
+          style={{ width: '100', height: 'auto' }}
           className="object-contain"
         />
       </div>

@@ -42,10 +42,10 @@ export default function Sidebar() {
         <Image 
           src="/logo.png" 
           alt="Dentplus Logo" 
-          width={160} 
+          width={100} 
           height={40} 
           priority
-          style={{ width: 'auto', height: 'auto' }}
+          style={{ width: '100', height: 'auto', justifyContent: 'center' }}
           className="object-contain"
         />
       </div>
