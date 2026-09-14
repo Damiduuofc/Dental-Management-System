@@ -39,7 +39,8 @@ export const initSocket = (server) => {
           senderModel,
           receiverId,
           receiverModel,
-          message
+          message,
+          read: false
         });
 
         const populatedMessage = await Message.findById(newMessage._id).populate([
@@ -53,6 +54,30 @@ export const initSocket = (server) => {
         io.to(senderId).emit('newMessage', populatedMessage);
       } catch (err) {
         console.error('❌ Error sending message:', err);
+      }
+    });
+
+    socket.on('markRead', async (data) => {
+      const { senderId, readerId } = data;
+      if (!senderId || !readerId) return;
+      try {
+        await Message.updateMany(
+          {
+            senderId,
+            receiverId: readerId,
+            read: false
+          },
+          {
+            $set: { read: true, readAt: new Date() }
+          }
+        );
+
+        io.to(senderId).emit('messagesRead', {
+          readerId,
+          conversationWith: readerId
+        });
+      } catch (err) {
+        console.error('❌ Error in markRead socket handler:', err);
       }
     });
 

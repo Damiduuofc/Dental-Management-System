@@ -13,7 +13,8 @@ import {
   Lock,
   LogOut,
   Stethoscope,
-  FileHeart
+  FileHeart,
+  MessageSquare
 } from 'lucide-react';
 import ChangePasswordModal from '@/components/ChangePasswordModal';
 
@@ -29,7 +30,7 @@ export default function PatientSidebar() {
         const token = localStorage.getItem("token");
         if (!token) return;
         
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/notifications`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/notifications`, {
           headers: {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
@@ -57,6 +58,7 @@ export default function PatientSidebar() {
     { title: "X-rays & Records", href: "/patient/x-rays", icon: FileHeart },
     { title: "Prescriptions", href: "/patient/prescriptions", icon: Pill },
     { title: "Billing & Balance", href: "/patient/billing", icon: CreditCard },
+    { title: "Messages", href: "/patient/messages", icon: MessageSquare },
     { title: "Notifications", href: "/patient/notifications", icon: Bell, badge: unreadCount },
     { title: "My Profile", href: "/patient/profile", icon: UserCircle },
   ];

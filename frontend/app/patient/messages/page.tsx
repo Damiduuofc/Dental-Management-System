@@ -2,16 +2,15 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import DentistSidebar from "@/components/dentist/Sidebar";
+import PatientSidebar from "@/components/patient/Sidebar";
 import ChatWindow, { Contact, MessageItem } from "@/components/ChatWindow";
 import { MessageSquare, Search, CheckCheck } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
-interface UserProfile {
-  id: string;
-  fullName: string;
+interface PatientProfile {
+  _id: string;
+  name: string;
   email: string;
-  role: string;
 }
 
 function formatMessageTime(dateStr?: string) {
@@ -38,9 +37,9 @@ function formatMessageTime(dateStr?: string) {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-export default function DentistMessagesPage() {
+export default function PatientMessagesPage() {
   const router = useRouter();
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [patient, setPatient] = useState<PatientProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([]);
@@ -54,35 +53,43 @@ export default function DentistMessagesPage() {
   const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009") + "/api";
   const socketUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009";
 
-  // 1. Authentication Check
+  // 1. Patient Authentication
   useEffect(() => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
-
-      if (!token || !storedUser) {
-        router.push("/login");
+      if (!token) {
+        router.push("/");
         return;
       }
 
-      try {
-        const parsedUser: UserProfile = JSON.parse(storedUser);
-        if (parsedUser.role !== "dentist") {
-          router.push("/admin/dashboard");
-          return;
+      const fetchProfile = async () => {
+        try {
+          const res = await fetch(`${apiBase}/patient/profile`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setPatient(data);
+            setLoading(false);
+          } else {
+            router.push("/");
+          }
+        } catch (err) {
+          console.error("Error fetching patient profile:", err);
+          router.push("/");
         }
-        setUser(parsedUser);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error parsing user profile:", err);
-        router.push("/login");
-      }
+      };
+
+      fetchProfile();
     }
-  }, [router]);
+  }, [router, apiBase]);
 
   // 2. Fetch Contacts Callback
   const fetchContacts = useCallback(async () => {
-    if (!user) return;
+    if (!patient) return;
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${apiBase}/messages/contacts`, {
@@ -98,7 +105,7 @@ export default function DentistMessagesPage() {
     } catch (err) {
       console.error("Error fetching contacts:", err);
     }
-  }, [user, apiBase]);
+  }, [patient, apiBase]);
 
   useEffect(() => {
     fetchContacts();
@@ -106,19 +113,19 @@ export default function DentistMessagesPage() {
 
   // 3. Setup Socket Connection at Page Level
   useEffect(() => {
-    if (!user) return;
+    if (!patient) return;
 
     const s = io(socketUrl);
     setSocket(s);
 
     s.on("connect", () => {
-      s.emit("register", user.id);
+      s.emit("register", patient._id);
     });
 
     const handleNewMessage = (msg: MessageItem) => {
       const msgSenderId = typeof msg.senderId === "object" ? msg.senderId._id : msg.senderId;
       const msgReceiverId = typeof msg.receiverId === "object" ? msg.receiverId._id : msg.receiverId;
-      const isIncoming = msgReceiverId === user.id;
+      const isIncoming = msgReceiverId === patient._id;
       const otherPersonId = isIncoming ? msgSenderId : msgReceiverId;
 
       setContacts((prevContacts) => {
@@ -177,7 +184,7 @@ export default function DentistMessagesPage() {
       s.off("messagesRead", handleMessagesRead);
       s.disconnect();
     };
-  }, [user, socketUrl, fetchContacts]);
+  }, [patient, socketUrl, fetchContacts]);
 
   // 4. Handle Search & Filtering
   useEffect(() => {
@@ -197,12 +204,10 @@ export default function DentistMessagesPage() {
   const handleSelectContact = (contact: Contact) => {
     setActiveContact(contact);
 
-    // Reset unread count locally for this contact
     setContacts((prev) =>
       prev.map((c) => (c.id === contact.id ? { ...c, unreadCount: 0 } : c))
     );
 
-    // Mark as read in backend
     const token = localStorage.getItem("token");
     fetch(`${apiBase}/messages/read/${contact.id}`, {
       method: "PUT",
@@ -212,9 +217,8 @@ export default function DentistMessagesPage() {
       }
     }).catch(() => {});
 
-    // Emit socket event
-    if (socket && user) {
-      socket.emit("markRead", { senderId: contact.id, readerId: user.id });
+    if (socket && patient) {
+      socket.emit("markRead", { senderId: contact.id, readerId: patient._id });
     }
   };
 
@@ -239,7 +243,7 @@ export default function DentistMessagesPage() {
         lastMessage: {
           _id: sentMsg._id,
           message: sentMsg.message,
-          senderId: user?.id || "",
+          senderId: patient?._id || "",
           receiverId: receiverIdStr,
           createdAt: sentMsg.createdAt,
           read: false
@@ -259,30 +263,30 @@ export default function DentistMessagesPage() {
     );
   }
 
-  const userInitials = user
-    ? user.fullName
+  const patientInitials = patient?.name
+    ? patient.name
         .split(" ")
         .map((n) => n[0])
         .join("")
         .toUpperCase()
         .substring(0, 2)
-    : "DR";
+    : "PT";
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <DentistSidebar />
+      <PatientSidebar />
 
       <main className="flex-1 p-8 ml-64 min-h-screen flex flex-col">
         {/* Header */}
         <header className="flex items-center justify-between mb-8 flex-shrink-0">
           <div>
             <h2 className="text-3xl font-black text-slate-900">Messages</h2>
-            <p className="text-slate-500 mt-1">Communicate with patients, assistants, and other clinic staff members</p>
+            <p className="text-slate-500 mt-1">Communicate with your dentist, clinic assistants, and doctors</p>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center shadow">
-              {userInitials}
+              {patientInitials}
             </div>
           </div>
         </header>
@@ -297,7 +301,7 @@ export default function DentistMessagesPage() {
                 <Search className="absolute left-3.5 top-3 text-slate-400" size={16} />
                 <input
                   type="text"
-                  placeholder="Search or start new chat..."
+                  placeholder="Search clinic staff..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 text-slate-900 placeholder:text-slate-400"
@@ -314,7 +318,7 @@ export default function DentistMessagesPage() {
                   const isActive = activeContact?.id === contact.id;
                   const hasUnread = (contact.unreadCount || 0) > 0;
                   const lastMsg = contact.lastMessage;
-                  const isLastMsgFromMe = lastMsg && lastMsg.senderId === user?.id;
+                  const isLastMsgFromMe = lastMsg && lastMsg.senderId === patient?._id;
 
                   return (
                     <button
@@ -400,10 +404,10 @@ export default function DentistMessagesPage() {
 
           {/* Active Conversation or Placeholder */}
           <div className="md:col-span-2">
-            {activeContact && user ? (
+            {activeContact && patient ? (
               <ChatWindow
-                currentUserId={user.id}
-                currentUserRole={user.role}
+                currentUserId={patient._id}
+                currentUserRole="patient"
                 activeContact={activeContact}
                 socket={socket}
                 onBack={() => setActiveContact(null)}
@@ -417,7 +421,7 @@ export default function DentistMessagesPage() {
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-1">Select a Conversation</h3>
                 <p className="text-slate-500 text-sm max-w-sm">
-                  Choose a patient or staff member from the contact list to start messaging with real-time updates and read receipts.
+                  Choose a doctor or clinic staff member to ask questions or get assistance in real-time.
                 </p>
               </div>
             )}
@@ -427,4 +431,3 @@ export default function DentistMessagesPage() {
     </div>
   );
 }
-

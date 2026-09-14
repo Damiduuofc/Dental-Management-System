@@ -25,6 +25,14 @@ const messageSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  read: {
+    type: Boolean,
+    default: false
+  },
+  readAt: {
+    type: Date,
+    default: null
+  }
 }, { timestamps: true });
 
 export default mongoose.models.Message || mongoose.model('Message', messageSchema);
