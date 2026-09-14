@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PatientSidebar from "@/components/patient/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 import {
   Stethoscope,
   Activity,
@@ -38,23 +39,33 @@ interface TreatmentPlanItem {
 export default function PatientTreatmentsPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<TreatmentPlanItem[]>([]);
+  const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009") + "/api";
 
-  const fetchTreatmentPlans = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${apiBase}/patient/treatment-plans`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const token = localStorage.getItem("token") || localStorage.getItem("patientToken");
+      if (!token) return;
 
-      if (res.ok) {
-        const data = await res.json();
-        setPlans(data);
+      const headers = {
+        Authorization: `Bearer ${token}`
+      };
+
+      const [profileRes, plansRes] = await Promise.all([
+        fetch(`${apiBase}/patient/profile`, { headers }),
+        fetch(`${apiBase}/patient/treatment-plans`, { headers })
+      ]);
+
+      if (profileRes.ok) {
+        const pData = await profileRes.json();
+        setPatient(pData);
+      }
+      if (plansRes.ok) {
+        const data = await plansRes.json();
+        setPlans(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error("Error fetching patient treatment plans:", err);
@@ -65,16 +76,15 @@ export default function PatientTreatmentsPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
+      const token = localStorage.getItem("token") || localStorage.getItem("patientToken");
 
-      if (!token || !storedUser) {
-        router.push("/login");
+      if (!token) {
+        window.location.href = "/";
         return;
       }
-      fetchTreatmentPlans();
+      fetchData();
     }
-  }, [router]);
+  }, []);
 
   if (loading) {
     return (
@@ -98,13 +108,16 @@ export default function PatientTreatmentsPage() {
             <p className="text-slate-500 mt-1">Review procedure timelines, clinical findings, and completed treatment steps</p>
           </div>
 
-          <button
-            onClick={fetchTreatmentPlans}
-            className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition cursor-pointer text-slate-600 shadow-sm"
-            title="Refresh"
-          >
-            <RefreshCw size={18} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={fetchData}
+              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer text-slate-600 shadow-sm"
+              title="Refresh"
+            >
+              <RefreshCw size={18} />
+            </button>
+            <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} />
+          </div>
         </header>
 
         {plans.length === 0 ? (
@@ -161,7 +174,7 @@ export default function PatientTreatmentsPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar size={14} />
-                      Date Started: {new Date(plan.startDate).toLocaleDateString()}
+                      Date Started: {plan.startDate ? new Date(plan.startDate).toLocaleDateString() : "N/A"}
                     </span>
                     {plan.targetDate && (
                       <span className="flex items-center gap-1 text-purple-600 font-bold">

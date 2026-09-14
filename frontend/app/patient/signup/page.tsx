@@ -32,7 +32,7 @@ export default function PatientSignupPage() {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009";
       const response = await fetch(`${apiUrl}/api/patient/signup`, {
         method: "POST",
         headers: {

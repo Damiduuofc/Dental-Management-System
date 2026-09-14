@@ -11,7 +11,8 @@ import {
   Bell, 
   Stethoscope, 
   FileHeart, 
-  MessageSquare
+  MessageSquare,
+  LogOut
 } from 'lucide-react';
 
 export default function PatientSidebar() {
@@ -56,6 +57,14 @@ export default function PatientSidebar() {
     { title: "Notifications", href: "/patient/notifications", icon: Bell, badge: unreadCount },
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("patientToken");
+    localStorage.removeItem("patient");
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  };
+
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex flex-col px-6 py-8 fixed h-screen z-10">
       <div className="mb-10 px-2 flex justify-start">
@@ -71,7 +80,7 @@ export default function PatientSidebar() {
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-2 overflow-y-auto">
         {patientMenuItems.map((item) => {
           const active = pathname === item.href;
           const showBadge = item.badge !== undefined && item.badge > 0;
@@ -100,6 +109,17 @@ export default function PatientSidebar() {
           );
         })}
       </nav>
+
+      {/* Logout button */}
+      <div className="pt-4 mt-auto border-t border-slate-100">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-semibold text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
+        >
+          <LogOut size={18} />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

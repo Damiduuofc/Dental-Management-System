@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PatientSidebar from "@/components/patient/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 import {
   FileHeart,
   Calendar,
@@ -34,6 +35,7 @@ export default function PatientXRaysPage() {
   const router = useRouter();
   const [xrays, setXrays] = useState<XRayItem[]>([]);
   const [filteredXrays, setFilteredXrays] = useState<XRayItem[]>([]);
+  const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
 
@@ -43,20 +45,30 @@ export default function PatientXRaysPage() {
 
   const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009") + "/api";
 
-  const fetchXRays = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${apiBase}/patient/xrays`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const token = localStorage.getItem("token") || localStorage.getItem("patientToken");
+      if (!token) return;
 
-      if (res.ok) {
-        const data = await res.json();
-        setXrays(data);
-        setFilteredXrays(data);
+      const headers = {
+        Authorization: `Bearer ${token}`
+      };
+
+      const [profileRes, xraysRes] = await Promise.all([
+        fetch(`${apiBase}/patient/profile`, { headers }),
+        fetch(`${apiBase}/patient/xrays`, { headers })
+      ]);
+
+      if (profileRes.ok) {
+        const pData = await profileRes.json();
+        setPatient(pData);
+      }
+      if (xraysRes.ok) {
+        const data = await xraysRes.json();
+        const list = Array.isArray(data) ? data : [];
+        setXrays(list);
+        setFilteredXrays(list);
       }
     } catch (err) {
       console.error("Error fetching patient X-rays:", err);
@@ -67,16 +79,15 @@ export default function PatientXRaysPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
+      const token = localStorage.getItem("token") || localStorage.getItem("patientToken");
 
-      if (!token || !storedUser) {
-        router.push("/login");
+      if (!token) {
+        window.location.href = "/";
         return;
       }
-      fetchXRays();
+      fetchData();
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (selectedCategory === "All") {
@@ -108,13 +119,16 @@ export default function PatientXRaysPage() {
             <p className="text-slate-500 mt-1">View digital radiographs and official radiological findings from your dental care team</p>
           </div>
 
-          <button
-            onClick={fetchXRays}
-            className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition cursor-pointer text-slate-600 shadow-sm"
-            title="Refresh"
-          >
-            <RefreshCw size={18} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={fetchData}
+              className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition cursor-pointer text-slate-600 shadow-sm"
+              title="Refresh"
+            >
+              <RefreshCw size={18} />
+            </button>
+            <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} />
+          </div>
         </header>
 
         {/* Filter Chips */}
@@ -189,7 +203,7 @@ export default function PatientXRaysPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar size={13} />
-                        {new Date(item.date).toLocaleDateString()}
+                        {item.date ? new Date(item.date).toLocaleDateString() : "N/A"}
                       </span>
                     </div>
 
@@ -235,7 +249,7 @@ export default function PatientXRaysPage() {
                 <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">{lightboxXray.category} Radiograph</span>
                 <h3 className="text-2xl font-black">{lightboxXray.title}</h3>
                 <p className="text-slate-400 text-xs">
-                  Attending Doctor: Dr. {lightboxXray.dentist?.fullName} | Date: {new Date(lightboxXray.date).toLocaleDateString()}
+                  Attending Doctor: Dr. {lightboxXray.dentist?.fullName || "Attending Dentist"} | Date: {lightboxXray.date ? new Date(lightboxXray.date).toLocaleDateString() : "N/A"}
                 </p>
               </div>
 

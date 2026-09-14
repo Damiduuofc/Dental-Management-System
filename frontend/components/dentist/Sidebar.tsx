@@ -11,7 +11,8 @@ import {
   FileHeart, 
   CreditCard, 
   MessageSquare, 
-  ClipboardList
+  ClipboardList,
+  LogOut
 } from 'lucide-react';
 
 export default function DentistSidebar() {
@@ -28,6 +29,13 @@ export default function DentistSidebar() {
     { title: "Supply Request", href: "/dentist/supply", icon: ClipboardList }
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    window.location.href = "/admin/login";
+  };
+
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex flex-col px-6 py-8 fixed h-screen">
       <div className="mb-10 px-2 flex justify-start">
@@ -43,7 +51,7 @@ export default function DentistSidebar() {
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-2 overflow-y-auto">
         {dentistMenuItems.map((item) => {
           const active = pathname === item.href;
           return (
@@ -62,6 +70,17 @@ export default function DentistSidebar() {
           );
         })}
       </nav>
+
+      {/* Logout button */}
+      <div className="pt-4 mt-auto border-t border-slate-100">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-semibold text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
+        >
+          <LogOut size={18} />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

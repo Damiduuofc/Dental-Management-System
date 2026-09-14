@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { menuItems } from '@/lib/adminsildes';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { LogOut } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -25,6 +26,13 @@ export default function Sidebar() {
     }
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    window.location.href = "/admin/login";
+  };
+
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex flex-col px-6 py-8 fixed h-screen">
       <div className="mb-10 px-2 flex justify-start">
@@ -40,7 +48,7 @@ export default function Sidebar() {
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 space-y-2">
+      <nav className="flex-1 space-y-2 overflow-y-auto">
         {menuItems
           .filter((item) => item.roles.includes(userRole))
           .map((item, i) => {
@@ -61,6 +69,17 @@ export default function Sidebar() {
             );
           })}
       </nav>
+
+      {/* Logout button */}
+      <div className="pt-4 mt-auto border-t border-slate-200">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 rounded-xl px-4 py-3 font-semibold text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
+        >
+          <LogOut size={20} />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 }

@@ -17,7 +17,7 @@ export default function PatientLoginPage() {
     e.preventDefault();
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009";
       const response = await fetch(
         `${apiUrl}/api/patient/login`,
         {
@@ -37,6 +37,7 @@ export default function PatientLoginPage() {
 
         if (data.user) {
           localStorage.setItem("patient", JSON.stringify(data.user));
+          localStorage.setItem("user", JSON.stringify({ ...data.user, role: "patient" }));
         }
 
         alert("Login successful!");

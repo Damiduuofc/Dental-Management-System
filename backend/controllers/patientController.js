@@ -507,7 +507,13 @@ export const getBookedSlots = async (req, res) => {
 
 export const getPatientTreatmentPlans = async (req, res) => {
   try {
-    const plans = await TreatmentPlan.find({ patient: req.user.id })
+    const patientId = req.user.id;
+    const plans = await TreatmentPlan.find({
+      $or: [
+        { patient: patientId },
+        { 'patient._id': patientId }
+      ]
+    })
       .populate('dentist', 'fullName email phoneNumber')
       .sort({ createdAt: -1 });
     res.json(plans);
@@ -518,7 +524,13 @@ export const getPatientTreatmentPlans = async (req, res) => {
 
 export const getPatientXRays = async (req, res) => {
   try {
-    const records = await XRayRecord.find({ patient: req.user.id })
+    const patientId = req.user.id;
+    const records = await XRayRecord.find({
+      $or: [
+        { patient: patientId },
+        { 'patient._id': patientId }
+      ]
+    })
       .populate('dentist', 'fullName email phoneNumber')
       .sort({ date: -1, createdAt: -1 });
     res.json(records);
