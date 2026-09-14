@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { 
   LayoutDashboard, 
@@ -9,19 +9,13 @@ import {
   Pill, 
   CreditCard, 
   Bell, 
-  UserCircle,
-  Lock,
-  LogOut,
-  Stethoscope,
-  FileHeart,
+  Stethoscope, 
+  FileHeart, 
   MessageSquare
 } from 'lucide-react';
-import ChangePasswordModal from '@/components/ChangePasswordModal';
 
 export default function PatientSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -60,14 +54,7 @@ export default function PatientSidebar() {
     { title: "Billing & Balance", href: "/patient/billing", icon: CreditCard },
     { title: "Messages", href: "/patient/messages", icon: MessageSquare },
     { title: "Notifications", href: "/patient/notifications", icon: Bell, badge: unreadCount },
-    { title: "My Profile", href: "/patient/profile", icon: UserCircle },
   ];
-
-  const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = "/";
-  };
 
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex flex-col px-6 py-8 fixed h-screen z-10">
@@ -113,29 +100,6 @@ export default function PatientSidebar() {
           );
         })}
       </nav>
-
-      {/* Update Password Button */}
-      <button
-        onClick={() => setIsChangePasswordOpen(true)}
-        className="mt-auto flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 font-semibold text-blue-700 transition hover:bg-blue-600 hover:text-white cursor-pointer w-full text-sm"
-      >
-        <Lock size={18} />
-        Update Password
-      </button>
-
-      {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 font-semibold text-red-600 transition hover:bg-red-600 hover:text-white cursor-pointer w-full text-sm"
-      >
-        <LogOut size={18} />
-        Logout
-      </button>
-
-      <ChangePasswordModal
-        isOpen={isChangePasswordOpen}
-        onClose={() => setIsChangePasswordOpen(false)}
-      />
     </aside>
   );
 }

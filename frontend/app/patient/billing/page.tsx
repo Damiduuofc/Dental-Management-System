@@ -9,6 +9,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import PatientSidebar from "@/components/patient/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface BillItem {
   name: string;
@@ -45,7 +46,7 @@ export default function PatientBilling() {
 
   const fetchPatientData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/profile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/profile`, {
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
@@ -62,7 +63,7 @@ export default function PatientBilling() {
 
   const fetchBills = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/billing`, {
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
@@ -102,7 +103,7 @@ export default function PatientBilling() {
 
         const confirmPayment = async () => {
           try {
-            const billsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing`, {
+            const billsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/billing`, {
               headers: { "Authorization": `Bearer ${token}` }
             });
             if (billsRes.ok) {
@@ -115,7 +116,7 @@ export default function PatientBilling() {
                 const updatedDueAmount = Math.max(0, bill.amount - updatedAmountPaid);
                 const updatedStatus = updatedDueAmount === 0 ? 'Paid' : 'Partially Paid';
 
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing/${successBillId}/pay`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/billing/${successBillId}/pay`, {
                   method: 'PUT',
                   headers: {
                     "Authorization": `Bearer ${token}`,
@@ -158,7 +159,7 @@ export default function PatientBilling() {
   const handlePayBill = async (billId: string) => {
     setPaymentLoading(billId);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/billing/${billId}/checkout-session`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/billing/${billId}/checkout-session`, {
         method: 'POST',
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -200,12 +201,8 @@ export default function PatientBilling() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <img
-              src={`https://ui-avatars.com/api/?name=${patient?.name || "User"}&background=2563eb&color=fff`}
-              className="w-10 h-10 rounded-full shadow"
-              alt="Patient Profile"
-            />
-            <div>
+            <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} />
+            <div className="hidden sm:block">
               <p className="font-semibold text-sm text-slate-800">{patient?.name || "Loading..."}</p>
               <p className="text-[11px] text-slate-500 font-bold uppercase">Patient</p>
             </div>

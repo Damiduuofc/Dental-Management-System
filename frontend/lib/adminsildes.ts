@@ -27,6 +27,5 @@ export const menuItems = [
   { title: "Billing", href: "/admin/billing", icon: CreditCard, roles: ["system_admin", "assistant"] },
   { title: "Reports", href: "/admin/reports", icon: FileText, roles: ["system_admin", "assistant"] },
   { title: "Messages", href: "/admin/messages", icon: MessageSquare, roles: ["system_admin", "assistant"] },
-  { title: "Supply Request", href: "/admin/supply", icon: ClipboardList, roles: ["system_admin", "assistant"] },
-  { title: "My Profile", href: "/admin/profile", icon: UserCheck, roles: ["system_admin", "assistant"] }
+  { title: "Supply Request", href: "/admin/supply", icon: ClipboardList, roles: ["system_admin", "assistant"] }
 ];

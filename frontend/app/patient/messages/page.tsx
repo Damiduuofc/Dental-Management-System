@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import PatientSidebar from "@/components/patient/Sidebar";
 import ChatWindow, { Contact, MessageItem } from "@/components/ChatWindow";
+import ProfileDropdown from "@/components/ProfileDropdown";
 import { MessageSquare, Search, CheckCheck } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
@@ -285,9 +286,7 @@ export default function PatientMessagesPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center shadow">
-              {patientInitials}
-            </div>
+            <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} initials={patientInitials} />
           </div>
         </header>
 

@@ -15,6 +15,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 import PatientSidebar from "@/components/patient/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface Medication {
   name: string;
@@ -150,12 +151,8 @@ export default function PatientPrescriptions() {
           </div>
 
           <div className="flex items-center gap-3">
-            <img
-              src={`https://ui-avatars.com/api/?name=${patient?.name || "User"}&background=059669&color=fff`}
-              className="w-10 h-10 rounded-full shadow"
-              alt="Patient Profile"
-            />
-            <div>
+            <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} />
+            <div className="hidden sm:block">
               <p className="font-semibold text-sm text-slate-800">{patient?.name || "Loading..."}</p>
               <p className="text-[11px] text-slate-500 font-bold uppercase">Patient</p>
             </div>

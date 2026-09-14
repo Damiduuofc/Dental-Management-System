@@ -10,6 +10,7 @@ import {
   Search
 } from "lucide-react";
 import PatientSidebar from "@/components/patient/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface Notification {
   _id: string;
@@ -26,7 +27,7 @@ export default function PatientNotifications() {
 
   const fetchPatientData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/profile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/profile`, {
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
@@ -43,7 +44,7 @@ export default function PatientNotifications() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/notifications`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/notifications`, {
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
@@ -60,7 +61,7 @@ export default function PatientNotifications() {
 
   const markNotificationsAsRead = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/notifications/read`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/notifications/read`, {
         method: 'PUT',
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -119,12 +120,8 @@ export default function PatientNotifications() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <img
-              src={`https://ui-avatars.com/api/?name=${patient?.name || "User"}&background=2563eb&color=fff`}
-              className="w-10 h-10 rounded-full shadow"
-              alt="Patient Profile"
-            />
-            <div>
+            <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} />
+            <div className="hidden sm:block">
               <p className="font-semibold text-sm text-slate-800">{patient?.name || "Loading..."}</p>
               <p className="text-[11px] text-slate-500 font-bold uppercase">Patient</p>
             </div>

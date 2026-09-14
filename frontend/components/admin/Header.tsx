@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Bell, Search } from "lucide-react";
 import { io, Socket } from "socket.io-client";
+import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface Notification {
   _id: string;
@@ -23,6 +24,7 @@ interface HeaderProps {
 export default function Header({ title, subtitle, onSearch, showSearch = true }: HeaderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [userInitials, setUserInitials] = useState("AD");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -79,6 +81,7 @@ export default function Header({ title, subtitle, onSearch, showSearch = true }:
       if (storedUser) {
         try {
           const userObj = JSON.parse(storedUser);
+          setCurrentUser(userObj);
           if (userObj && userObj.fullName) {
             const initials = userObj.fullName
               .split(" ")
@@ -207,10 +210,8 @@ export default function Header({ title, subtitle, onSearch, showSearch = true }:
           )}
         </div>
 
-        {/* User initials circle */}
-        <div className="w-11 h-11 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center shadow">
-          {userInitials}
-        </div>
+        {/* User profile dropdown */}
+        <ProfileDropdown user={currentUser} initials={userInitials} />
       </div>
     </header>
   );

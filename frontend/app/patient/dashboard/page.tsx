@@ -17,6 +17,7 @@ import {
   Film
 } from "lucide-react";
 import PatientSidebar from "@/components/patient/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface Appointment {
   _id: string;
@@ -112,7 +113,7 @@ export default function PatientDashboard() {
 
   const fetchPatientData = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/profile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/profile`, {
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
@@ -129,7 +130,7 @@ export default function PatientDashboard() {
 
   const fetchAppointments = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/appointments`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/appointments`, {
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
@@ -146,7 +147,7 @@ export default function PatientDashboard() {
 
   const fetchDentists = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/dentists`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/dentists`, {
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
@@ -163,7 +164,7 @@ export default function PatientDashboard() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/notifications`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/notifications`, {
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "application/json" 
@@ -186,7 +187,7 @@ export default function PatientDashboard() {
       }
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/appointments/booked-slots?dentistId=${bookingForm.dentistId}&date=${bookingForm.date}`,
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/appointments/booked-slots?dentistId=${bookingForm.dentistId}&date=${bookingForm.date}`,
           {
             headers: {
               "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -232,7 +233,7 @@ export default function PatientDashboard() {
   const handleCancelAppointment = async (id: string) => {
     if (!confirm("Are you sure you want to cancel this appointment?")) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/appointments/${id}/cancel`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/appointments/${id}/cancel`, {
         method: 'PUT',
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -274,7 +275,7 @@ export default function PatientDashboard() {
         ...bookingForm,
         treatment: bookingForm.treatment || 'Consultation'
       };
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/appointments`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/patient/appointments`, {
         method: 'POST',
         headers: { 
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -348,15 +349,7 @@ export default function PatientDashboard() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <img
-              src={`https://ui-avatars.com/api/?name=${patient?.name || "User"}&background=2563eb&color=fff`}
-              className="w-10 h-10 rounded-full shadow"
-              alt="Patient Profile"
-            />
-            <div>
-              <p className="font-semibold text-sm text-slate-800">{patient?.name || "Loading..."}</p>
-              <p className="text-[11px] text-slate-500 font-bold uppercase">Patient</p>
-            </div>
+            <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} />
           </div>
         </header>
 

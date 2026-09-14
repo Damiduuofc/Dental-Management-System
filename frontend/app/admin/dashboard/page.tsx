@@ -52,7 +52,7 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/appointments`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/appointments`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -87,18 +87,22 @@ export default function Dashboard() {
     {
       label: "Scheduled Today",
       val: scheduledToday,
+      href: "/admin/appointments"
     },
     {
       label: "Check In",
       val: checkIn,
+      href: "/admin/check-in"
     },
     {
       label: "Low Stock Items",
       val: 5,
+      href: "/admin/inventory"
     },
     {
       label: "Pending Tasks",
       val: pendingTasks,
+      href: "/admin/appointments"
     },
   ];
 
@@ -112,15 +116,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const userInitials = user
-    ? user.fullName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .substring(0, 2)
-    : "AD";
 
   return (
     <div className="flex min-h-screen bg-slate-100">
@@ -140,10 +135,10 @@ export default function Dashboard() {
           {stats.map((item, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition"
+              onClick={() => router.push(item.href)}
+              className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-blue-400 hover:scale-[1.02] active:scale-[0.99] transition duration-200 cursor-pointer group"
             >
-              <h3 className="text-4xl font-bold text-slate-900">{item.val}</h3>
-
+              <h3 className="text-4xl font-bold text-slate-900 group-hover:text-blue-600 transition">{item.val}</h3>
               <p className="mt-2 text-slate-600 font-medium">{item.label}</p>
             </div>
           ))}
@@ -153,9 +148,17 @@ export default function Dashboard() {
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Schedule */}
           <div className="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-6">
-              Today's Schedule
-            </h3>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-900">
+                Today's Schedule
+              </h3>
+              <button
+                onClick={() => router.push('/admin/appointments')}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+              >
+                View All Appointments →
+              </button>
+            </div>
 
             <div className="space-y-4">
               {todayAppointments.length === 0 ? (
@@ -164,7 +167,11 @@ export default function Dashboard() {
                 </div>
               ) : (
                 todayAppointments.map((appt) => (
-                  <div key={appt._id} className="flex justify-between items-center p-4 rounded-xl bg-slate-50 border">
+                  <div
+                    key={appt._id}
+                    onClick={() => router.push('/admin/appointments')}
+                    className="flex justify-between items-center p-4 rounded-xl bg-slate-50 border hover:bg-slate-100/80 hover:border-blue-200 transition cursor-pointer"
+                  >
                     <div>
                       <h4 className="font-semibold text-slate-900">{appt.patient?.name || 'Unknown Patient'}</h4>
 
@@ -183,33 +190,49 @@ export default function Dashboard() {
 
           {/* Inventory */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <AlertTriangle className="text-amber-500" size={20} />
-
-              <h3 className="text-xl font-bold text-slate-900">Inventory Alerts</h3>
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="text-amber-500" size={20} />
+                <h3 className="text-xl font-bold text-slate-900">Inventory Alerts</h3>
+              </div>
+              <button
+                onClick={() => router.push('/admin/inventory')}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+              >
+                View Inventory →
+              </button>
             </div>
 
             <div className="space-y-4">
-              <div className="border rounded-xl p-4">
+              <div 
+                onClick={() => router.push('/admin/inventory')}
+                className="border rounded-xl p-4 hover:border-blue-200 hover:bg-slate-50/50 transition cursor-pointer"
+              >
                 <h4 className="font-semibold text-slate-900">Gloves</h4>
-
                 <p className="text-sm text-red-500">Only 12 remaining</p>
               </div>
 
-              <div className="border rounded-xl p-4">
+              <div 
+                onClick={() => router.push('/admin/inventory')}
+                className="border rounded-xl p-4 hover:border-blue-200 hover:bg-slate-50/50 transition cursor-pointer"
+              >
                 <h4 className="font-semibold text-slate-900">Dental Masks</h4>
-
                 <p className="text-sm text-red-500">Only 8 remaining</p>
               </div>
 
-              <div className="border rounded-xl p-4">
+              <div 
+                onClick={() => router.push('/admin/inventory')}
+                className="border rounded-xl p-4 hover:border-blue-200 hover:bg-slate-50/50 transition cursor-pointer"
+              >
                 <h4 className="font-semibold text-slate-900">Syringes</h4>
-
                 <p className="text-sm text-red-500">Only 20 remaining</p>
               </div>
             </div>
 
-            <button className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition">
+            <button
+              onClick={() => router.push('/admin/supply')}
+              className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition cursor-pointer shadow-sm hover:shadow"
+            >
               Order Supplies
             </button>
           </div>

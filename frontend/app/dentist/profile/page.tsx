@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DentistSidebar from "@/components/dentist/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 import { 
   User, 
   Bell
@@ -35,7 +36,7 @@ export default function DentistProfilePage() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/dentist/notifications`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/dentist/notifications`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       if (res.ok) {
@@ -51,7 +52,7 @@ export default function DentistProfilePage() {
     try {
       const token = localStorage.getItem("token");
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/dentist/notifications/read`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/dentist/notifications/read`,
         {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}` }
@@ -66,7 +67,7 @@ export default function DentistProfilePage() {
   const fetchProfilePhone = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/profile`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/profile`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -111,7 +112,7 @@ export default function DentistProfilePage() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/profile`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -229,9 +230,7 @@ export default function DentistProfilePage() {
               )}
             </div>
 
-            <div className="w-11 h-11 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center shadow">
-              {userInitials}
-            </div>
+            <ProfileDropdown user={user} initials={userInitials} />
           </div>
         </header>
 

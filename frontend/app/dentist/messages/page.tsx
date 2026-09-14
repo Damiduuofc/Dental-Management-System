@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DentistSidebar from "@/components/dentist/Sidebar";
 import ChatWindow, { Contact, MessageItem } from "@/components/ChatWindow";
+import ProfileDropdown from "@/components/ProfileDropdown";
 import { MessageSquare, Search, CheckCheck } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
@@ -281,9 +282,7 @@ export default function DentistMessagesPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center shadow">
-              {userInitials}
-            </div>
+            <ProfileDropdown user={user} initials={userInitials} />
           </div>
         </header>
 

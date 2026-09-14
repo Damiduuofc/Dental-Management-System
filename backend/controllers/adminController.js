@@ -763,8 +763,10 @@ export const updatePassword = async (req, res) => {
 
   try {
     let account;
-    if (req.user.role === 'system_admin') {
+    if (req.user.role === 'system_admin' || req.user.role === 'admin') {
       account = await Admin.findById(req.user.id);
+    } else if (req.user.role === 'patient') {
+      account = await Patient.findById(req.user.id);
     } else {
       account = await User.findById(req.user.id);
     }

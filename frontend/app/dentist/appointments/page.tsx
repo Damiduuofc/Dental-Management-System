@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DentistSidebar from "@/components/dentist/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 import PatientDetailsModal from "@/components/PatientDetailsModal";
 import { 
   Calendar, 
@@ -87,7 +88,7 @@ export default function DentistAppointmentsPage() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/dentist/notifications`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/dentist/notifications`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       if (res.ok) {
@@ -103,7 +104,7 @@ export default function DentistAppointmentsPage() {
     try {
       const token = localStorage.getItem("token");
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/dentist/notifications/read`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/dentist/notifications/read`,
         {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}` }
@@ -119,7 +120,7 @@ export default function DentistAppointmentsPage() {
     try {
       const token = localStorage.getItem("token");
       const headers = { 'Authorization': `Bearer ${token}` };
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009';
 
       // Fetch appointments
       const apptRes = await fetch(`${apiBase}/api/admin/appointments`, { headers });
@@ -173,7 +174,7 @@ export default function DentistAppointmentsPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/appointments/${apptId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/appointments/${apptId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +203,7 @@ export default function DentistAppointmentsPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/appointments/${selectedAppt._id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/appointments/${selectedAppt._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -239,7 +240,7 @@ export default function DentistAppointmentsPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/appointments`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/appointments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -368,9 +369,7 @@ export default function DentistAppointmentsPage() {
               )}
             </div>
 
-            <div className="w-11 h-11 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center shadow">
-              {userInitials}
-            </div>
+            <ProfileDropdown user={user} initials={userInitials} />
           </div>
         </header>
 

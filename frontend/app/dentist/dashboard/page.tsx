@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DentistSidebar from "@/components/dentist/Sidebar";
+import ProfileDropdown from "@/components/ProfileDropdown";
 import { 
   Users, 
   CheckCircle2, 
@@ -90,7 +91,7 @@ export default function DentistDashboard() {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/dentist/notifications`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/dentist/notifications`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       if (res.ok) {
@@ -106,7 +107,7 @@ export default function DentistDashboard() {
     try {
       const token = localStorage.getItem("token");
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/dentist/notifications/read`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/dentist/notifications/read`,
         {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}` }
@@ -122,7 +123,7 @@ export default function DentistDashboard() {
     try {
       const token = localStorage.getItem("token");
       const headers = { 'Authorization': `Bearer ${token}` };
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009';
 
       // Fetch appointments
       const apptRes = await fetch(`${apiBase}/api/admin/appointments`, { headers });
@@ -317,10 +318,10 @@ export default function DentistDashboard() {
   const totalTreatmentsCount = dentistAppointments.filter(appt => appt.status === 'Completed').length;
 
   const stats = [
-    { label: "Today's Patients", val: todaysPatientsCount, icon: Users, color: "text-blue-600 bg-blue-50 border-blue-100" },
-    { label: "Completed Today", val: completedTodayCount, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
-    { label: "Next Appointment", val: nextApptTime, icon: Clock, color: "text-amber-600 bg-amber-50 border-amber-100" },
-    { label: "Total Treatments Done", val: totalTreatmentsCount, icon: Activity, color: "text-purple-600 bg-purple-50 border-purple-100" },
+    { label: "Today's Patients", val: todaysPatientsCount, icon: Users, color: "text-blue-600 bg-blue-50 border-blue-100", href: "/dentist/patients" },
+    { label: "Completed Today", val: completedTodayCount, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50 border-emerald-100", href: "/dentist/appointments" },
+    { label: "Next Appointment", val: nextApptTime, icon: Clock, color: "text-amber-600 bg-amber-50 border-amber-100", href: "/dentist/appointments" },
+    { label: "Total Treatments Done", val: totalTreatmentsCount, icon: Activity, color: "text-purple-600 bg-purple-50 border-purple-100", href: "/dentist/treatments" },
   ];
 
   return (
@@ -386,9 +387,7 @@ export default function DentistDashboard() {
               )}
             </div>
 
-            <div className="w-11 h-11 rounded-full bg-blue-700 text-white font-bold flex items-center justify-center shadow">
-              {userInitials}
-            </div>
+            <ProfileDropdown user={user} initials={userInitials} />
           </div>
         </header>
 
@@ -397,13 +396,14 @@ export default function DentistDashboard() {
           {stats.map((item, index) => (
             <div
               key={index}
-              className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition flex items-center gap-4"
+              onClick={() => router.push(item.href)}
+              className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm hover:shadow-md hover:border-blue-200 hover:scale-[1.02] active:scale-[0.99] transition duration-200 flex items-center gap-4 cursor-pointer group"
             >
-              <div className={`p-4 rounded-2xl border ${item.color}`}>
+              <div className={`p-4 rounded-2xl border ${item.color} group-hover:scale-110 transition duration-200`}>
                 <item.icon size={24} />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-slate-900">{item.val}</h3>
+                <h3 className="text-2xl font-black text-slate-900 group-hover:text-blue-600 transition">{item.val}</h3>
                 <p className="text-sm text-slate-500 font-medium">{item.label}</p>
               </div>
             </div>

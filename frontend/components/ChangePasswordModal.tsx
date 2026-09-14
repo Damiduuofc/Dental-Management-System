@@ -43,7 +43,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
 
     try {
       const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/admin/update-password`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5009'}/api/admin/update-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
