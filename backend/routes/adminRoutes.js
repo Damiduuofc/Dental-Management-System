@@ -15,6 +15,7 @@ import {
   createBill,
   updateBill,
   getBillingSummary,
+  getMonthlyCashflow,
   createAdminCheckoutSession,
   resetStaffPassword,
   updatePassword,
@@ -74,6 +75,7 @@ router.post('/billing', verifyToken, isStaff, createBill);
 router.put('/billing/:id', verifyToken, isStaff, updateBill);
 router.post('/billing/:id/checkout-session', verifyToken, isStaff, createAdminCheckoutSession);
 router.get('/billing/summary', verifyToken, isStaff, getBillingSummary);
+router.get('/billing/cashflow', verifyToken, isStaff, getMonthlyCashflow);
 
 // Clinical Treatment Plans routes
 router.get('/treatment-plans', verifyToken, isStaff, getTreatmentPlans);

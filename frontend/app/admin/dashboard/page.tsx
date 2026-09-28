@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
+import IncomeExpenseChart from "@/components/admin/IncomeExpenseChart";
 import { AlertTriangle } from "lucide-react";
 
 interface UserProfile {
@@ -142,6 +143,11 @@ export default function Dashboard() {
               <p className="mt-2 text-slate-600 font-medium">{item.label}</p>
             </div>
           ))}
+        </section>
+
+        {/* 1-Month Filtered Incoming vs Expenses Line Graph */}
+        <section className="mb-8">
+          <IncomeExpenseChart showReportLink={true} />
         </section>
 
         {/* Content */}

@@ -13,6 +13,9 @@ import Billing from '../models/Billing.js';
 import TreatmentPlan from '../models/TreatmentPlan.js';
 import XRayRecord from '../models/XRayRecord.js';
 import Prescription from '../models/Prescription.js';
+import Inventory from '../models/Inventory.js';
+import InventoryLog from '../models/InventoryLog.js';
+import SupplierOrder from '../models/SupplierOrder.js';
 import { sendRealTimeNotification } from '../socket.js';
 import { addToGoogleCalendar } from '../utils/googleCalendarService.js';
 
@@ -652,14 +655,42 @@ export const updateBill = async (req, res) => {
 
 export const getBillingSummary = async (req, res) => {
   try {
-    const bills = await Billing.find();
+    const [bills, inventoryItems, restockLogs, supplierOrders] = await Promise.all([
+      Billing.find(),
+      Inventory.find(),
+      InventoryLog.find({ type: 'restock' }).populate('item', 'price name'),
+      SupplierOrder.find({ status: { $in: ['Requested', 'Confirmed'] } })
+    ]);
+
+    const itemPriceById = new Map();
+    const itemPriceByName = new Map();
+    inventoryItems.forEach(item => {
+      itemPriceById.set(String(item._id), Number(item.price || 0));
+      if (item.name) itemPriceByName.set(item.name.trim().toLowerCase(), Number(item.price || 0));
+    });
+
     const totalSales = bills
-      .reduce((sum, b) => sum + (b.amountPaid || 0), 0);
+      .reduce((sum, b) => sum + (b.amountPaid !== undefined && b.amountPaid > 0 ? b.amountPaid : (b.status === 'Paid' ? b.amount : 0)), 0);
     const totalOutstanding = bills
       .reduce((sum, b) => {
         const due = b.dueAmount !== undefined ? b.dueAmount : (b.status === 'Paid' ? 0 : b.amount);
         return sum + due;
       }, 0);
+
+    let totalExpenses = 0;
+    restockLogs.forEach(log => {
+      const unitPrice = log.item?.price !== undefined
+        ? Number(log.item.price)
+        : (itemPriceById.get(String(log.item?._id || log.item)) || 0);
+      totalExpenses += Number(log.quantity || 0) * unitPrice;
+    });
+
+    supplierOrders.forEach(order => {
+      const unitPrice = (order.inventoryItem && itemPriceById.get(String(order.inventoryItem))) ||
+        (order.itemName && itemPriceByName.get(order.itemName.trim().toLowerCase())) ||
+        0;
+      totalExpenses += Number(order.quantity || 0) * unitPrice;
+    });
     
     const statusCounts = { Paid: 0, Unpaid: 0, Pending: 0, 'Partially Paid': 0 };
     bills.forEach(b => {
@@ -669,7 +700,7 @@ export const getBillingSummary = async (req, res) => {
 
     const treatmentRevenue = {};
     bills.forEach(b => {
-      const paid = b.amountPaid || 0;
+      const paid = b.amountPaid !== undefined && b.amountPaid > 0 ? b.amountPaid : (b.status === 'Paid' ? b.amount : 0);
       if (paid > 0) {
         treatmentRevenue[b.treatment] = (treatmentRevenue[b.treatment] || 0) + paid;
       }
@@ -677,6 +708,7 @@ export const getBillingSummary = async (req, res) => {
 
     res.json({
       totalSales,
+      totalExpenses,
       totalOutstanding,
       statusCounts,
       treatmentRevenue,
@@ -684,6 +716,183 @@ export const getBillingSummary = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Server error fetching billing summary", error: error.message });
+  }
+};
+
+export const getMonthlyCashflow = async (req, res) => {
+  try {
+    const { month, startDate, endDate, mode } = req.query;
+
+    let start;
+    let end;
+
+    if (month && /^\d{4}-\d{2}$/.test(String(month))) {
+      const [yearStr, monthStr] = String(month).split('-');
+      const year = Number(yearStr);
+      const monthIdx = Number(monthStr) - 1;
+      start = new Date(year, monthIdx, 1, 0, 0, 0, 0);
+      end = new Date(year, monthIdx + 1, 0, 23, 59, 59, 999);
+    } else if (startDate) {
+      start = new Date(String(startDate));
+      start.setHours(0, 0, 0, 0);
+      if (endDate) {
+        end = new Date(String(endDate));
+      } else {
+        end = new Date(start.getTime() + 29 * 24 * 60 * 60 * 1000);
+      }
+      end.setHours(23, 59, 59, 999);
+    } else {
+      // Default: 1-month period (last 30 days ending today)
+      end = new Date();
+      end.setHours(23, 59, 59, 999);
+      start = new Date(end.getTime() - 29 * 24 * 60 * 60 * 1000);
+      start.setHours(0, 0, 0, 0);
+    }
+
+    const toLocalDateKey = (d) => {
+      const dt = new Date(d);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const day = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    const formatShortLabel = (d) => {
+      const dt = new Date(d);
+      return dt.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+    };
+
+    // Build daily buckets for every day in the 1-month range
+    const dailyMap = new Map();
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      const key = toLocalDateKey(cursor);
+      dailyMap.set(key, {
+        date: key,
+        label: formatShortLabel(cursor),
+        incoming: 0,
+        expenses: 0,
+        net: 0,
+        incomingCount: 0,
+        expenseCount: 0
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const [bills, inventoryItems, restockLogs, supplierOrders] = await Promise.all([
+      Billing.find({
+        $or: [
+          { date: { $gte: start, $lte: end } },
+          { createdAt: { $gte: start, $lte: end } }
+        ]
+      }),
+      Inventory.find(),
+      InventoryLog.find({
+        type: 'restock',
+        createdAt: { $gte: start, $lte: end }
+      }).populate('item', 'price name'),
+      SupplierOrder.find({
+        status: { $in: ['Requested', 'Confirmed'] },
+        $or: [
+          { orderDate: { $gte: start, $lte: end } },
+          { createdAt: { $gte: start, $lte: end } }
+        ]
+      })
+    ]);
+
+    const itemPriceById = new Map();
+    const itemPriceByName = new Map();
+    inventoryItems.forEach(item => {
+      itemPriceById.set(String(item._id), Number(item.price || 0));
+      if (item.name) {
+        itemPriceByName.set(item.name.trim().toLowerCase(), Number(item.price || 0));
+      }
+    });
+
+    // Aggregate Incoming (collected patient billing revenue)
+    bills.forEach(bill => {
+      const rawDate = bill.date || bill.createdAt;
+      if (!rawDate) return;
+      const key = toLocalDateKey(rawDate);
+      const bucket = dailyMap.get(key);
+      if (!bucket) return;
+
+      const paidAmount = bill.amountPaid !== undefined && bill.amountPaid > 0
+        ? Number(bill.amountPaid)
+        : (bill.status === 'Paid' ? Number(bill.amount || 0) : 0);
+
+      if (paidAmount > 0) {
+        bucket.incoming += paidAmount;
+        bucket.incomingCount += 1;
+      }
+    });
+
+    // Aggregate Expenses from Inventory Restock Logs
+    restockLogs.forEach(log => {
+      if (!log.createdAt) return;
+      const key = toLocalDateKey(log.createdAt);
+      const bucket = dailyMap.get(key);
+      if (!bucket) return;
+
+      const unitPrice = log.item?.price !== undefined
+        ? Number(log.item.price)
+        : (itemPriceById.get(String(log.item?._id || log.item)) || 0);
+      const cost = Number(log.quantity || 0) * unitPrice;
+
+      if (cost > 0) {
+        bucket.expenses += cost;
+        bucket.expenseCount += 1;
+      }
+    });
+
+    // Aggregate Expenses from pending/confirmed Supplier Orders (Delivered orders already create restock logs)
+    supplierOrders.forEach(order => {
+      const rawDate = order.orderDate || order.createdAt;
+      if (!rawDate) return;
+      const key = toLocalDateKey(rawDate);
+      const bucket = dailyMap.get(key);
+      if (!bucket) return;
+
+      const unitPrice = (order.inventoryItem && itemPriceById.get(String(order.inventoryItem))) ||
+        (order.itemName && itemPriceByName.get(order.itemName.trim().toLowerCase())) ||
+        0;
+      const cost = Number(order.quantity || 0) * unitPrice;
+
+      if (cost > 0) {
+        bucket.expenses += cost;
+        bucket.expenseCount += 1;
+      }
+    });
+
+    const dailyData = Array.from(dailyMap.values()).map(day => ({
+      ...day,
+      net: day.incoming - day.expenses
+    }));
+
+    const totalIncoming = dailyData.reduce((sum, d) => sum + d.incoming, 0);
+    const totalExpenses = dailyData.reduce((sum, d) => sum + d.expenses, 0);
+    const incomingCount = dailyData.reduce((sum, d) => sum + d.incomingCount, 0);
+    const expenseCount = dailyData.reduce((sum, d) => sum + d.expenseCount, 0);
+
+    res.json({
+      period: {
+        startDate: toLocalDateKey(start),
+        endDate: toLocalDateKey(end),
+        month: month || null,
+        mode: mode || (month ? 'month' : 'rolling30'),
+        daysCount: dailyData.length
+      },
+      totals: {
+        totalIncoming,
+        totalExpenses,
+        netBalance: totalIncoming - totalExpenses,
+        incomingCount,
+        expenseCount
+      },
+      dailyData
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error fetching monthly cashflow data", error: error.message });
   }
 };
 

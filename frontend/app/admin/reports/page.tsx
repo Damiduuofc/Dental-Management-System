@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FileText, TrendingUp, AlertCircle, Calendar, RefreshCw, Boxes, FileDown, Activity } from 'lucide-react';
+import { FileText, TrendingUp, TrendingDown, AlertCircle, Calendar, RefreshCw, Boxes, FileDown, Activity } from 'lucide-react';
 import Sidebar from '@/components/admin/Sidebar';
 import Header from '@/components/admin/Header';
+import IncomeExpenseChart from '@/components/admin/IncomeExpenseChart';
 
 interface SummaryData {
   totalSales: number;
+  totalExpenses?: number;
   totalOutstanding: number;
   statusCounts: {
     Paid: number;
@@ -198,21 +200,33 @@ export default function AdminReportsPage() {
             </div>
 
             {/* Stats Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Total Revenue */}
-              <div className="bg-gradient-to-br from-blue-700 to-blue-600 text-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
+              <div className="bg-gradient-to-br from-emerald-600 to-emerald-500 text-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
                 <div className="flex justify-between items-start mb-4">
                   <span className="p-3 bg-white/10 rounded-xl">
                     <TrendingUp size={24} />
                   </span>
-                  <span className="text-xs font-bold px-2 py-1 rounded bg-white/20 uppercase tracking-wider">Collected</span>
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-white/20 uppercase tracking-wider">Incoming</span>
                 </div>
                 <div className="text-3xl font-black">Rs. {summary.totalSales.toLocaleString()}</div>
                 <div className="text-sm opacity-90 mt-2 font-medium">Total Sales Revenue</div>
               </div>
 
-              {/* Outstanding Balances */}
+              {/* Total Expenses */}
               <div className="bg-gradient-to-br from-rose-600 to-rose-500 text-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="p-3 bg-white/10 rounded-xl">
+                    <TrendingDown size={24} />
+                  </span>
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-white/20 uppercase tracking-wider">Expenses</span>
+                </div>
+                <div className="text-3xl font-black">Rs. {(summary.totalExpenses || 0).toLocaleString()}</div>
+                <div className="text-sm opacity-90 mt-2 font-medium">Total Supply & Stock Expenses</div>
+              </div>
+
+              {/* Outstanding Balances */}
+              <div className="bg-gradient-to-br from-amber-600 to-amber-500 text-white p-6 rounded-2xl shadow-md hover:shadow-lg transition">
                 <div className="flex justify-between items-start mb-4">
                   <span className="p-3 bg-white/10 rounded-xl">
                     <AlertCircle size={24} />
@@ -235,6 +249,9 @@ export default function AdminReportsPage() {
                 <div className="text-sm opacity-90 mt-2 font-medium">Invoices Generated</div>
               </div>
             </div>
+
+            {/* 1-Month Filtered Incoming vs Expenses Line Graph */}
+            <IncomeExpenseChart showReportLink={false} />
 
             {/* Detailed Analytics Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
