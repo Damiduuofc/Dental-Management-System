@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Plus, CreditCard, Edit, Check, X, ShieldAlert } from 'lucide-react';
 import Sidebar from '@/components/admin/Sidebar';
 import { formatDoctorName } from "@/lib/utils";
+import SearchableSelect from "@/components/SearchableSelect";
 
 interface Patient {
   _id: string;
@@ -56,10 +57,6 @@ export default function AdminBillingPage() {
   const paymentConfirmedRef = useRef(false);
 
   // Search-as-you-type selectors states
-  const [patientSearch, setPatientSearch] = useState('');
-  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
-  const [dentistSearch, setDentistSearch] = useState('');
-  const [showDentistDropdown, setShowDentistDropdown] = useState(false);
   
   const [patientId, setPatientId] = useState('');
   const [status, setStatus] = useState<'Paid' | 'Unpaid' | 'Pending' | 'Partially Paid'>('Unpaid');
@@ -244,6 +241,10 @@ export default function AdminBillingPage() {
 
   const handleGenerateInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!dentistId) {
+      alert("Please select a dentist.");
+      return;
+    }
     if (!patientId) {
       alert("Please select a patient.");
       return;
@@ -492,12 +493,6 @@ export default function AdminBillingPage() {
     setPaymentMethod(bill.paymentMethod || 'N/A');
     const dId = bill.dentist?._id || bill.dentist || '';
     setDentistId(dId);
-    const dentistObj = dentists.find(d => d._id === dId);
-    if (dentistObj) {
-      setDentistSearch(formatDoctorName(dentistObj.fullName));
-    } else {
-      setDentistSearch('');
-    }
     if (bill.items && bill.items.length > 0) {
       setItems(bill.items.map((item: any) => ({ name: item.name, cost: item.cost })));
     } else {
@@ -541,8 +536,6 @@ export default function AdminBillingPage() {
           </div>
           <button 
             onClick={() => {
-              setPatientSearch('');
-              setDentistSearch('');
               setPatientId('');
               setDentistId('');
               setItems([]);
@@ -642,86 +635,24 @@ export default function AdminBillingPage() {
               <form onSubmit={handleGenerateInvoice} className="space-y-4">
                 <div>
                   <label className="block text-slate-700 text-sm font-bold mb-1.5">Select Dentist</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Type to search dentist..."
-                      value={dentistSearch}
-                      onFocus={() => setShowDentistDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowDentistDropdown(false), 200)}
-                      onChange={(e) => {
-                        setDentistSearch(e.target.value);
-                        setDentistId('');
-                      }}
-                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                      required={!dentistId}
-                    />
-                    {showDentistDropdown && (
-                      <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto z-[70]">
-                        {dentists
-                          .filter(d => d.fullName.toLowerCase().includes(dentistSearch.toLowerCase()))
-                          .map(d => (
-                            <button
-                              key={d._id}
-                              type="button"
-                              onClick={() => {
-                                setDentistId(d._id);
-                                setDentistSearch(formatDoctorName(d.fullName));
-                                setShowDentistDropdown(false);
-                              }}
-                              className="w-full text-left p-3 hover:bg-slate-50 text-slate-800 font-medium text-sm border-b last:border-b-0 border-slate-100"
-                            >
-                              {formatDoctorName(d.fullName)}
-                            </button>
-                          ))}
-                        {dentists.filter(d => d.fullName.toLowerCase().includes(dentistSearch.toLowerCase())).length === 0 && (
-                          <div className="p-3 text-slate-400 text-sm text-center">No dentist found</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <SearchableSelect
+                    options={dentists.map(d => ({ value: d._id, label: formatDoctorName(d.fullName), keywords: d.fullName }))}
+                    value={dentistId}
+                    onChange={setDentistId}
+                    placeholder="Type to search dentist..."
+                    emptyText="No dentist found"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-slate-700 text-sm font-bold mb-1.5">Select Patient</label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Type to search patient..."
-                      value={patientSearch}
-                      onFocus={() => setShowPatientDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowPatientDropdown(false), 200)}
-                      onChange={(e) => {
-                        setPatientSearch(e.target.value);
-                        setPatientId('');
-                      }}
-                      className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                      required={!patientId}
-                    />
-                    {showPatientDropdown && (
-                      <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto z-[70]">
-                        {patients
-                          .filter(p => p.name.toLowerCase().includes(patientSearch.toLowerCase()) || p.email.toLowerCase().includes(patientSearch.toLowerCase()))
-                          .map(p => (
-                            <button
-                              key={p._id}
-                              type="button"
-                              onClick={() => {
-                                setPatientId(p._id);
-                                setPatientSearch(`${p.name} (${p.email})`);
-                                setShowPatientDropdown(false);
-                              }}
-                              className="w-full text-left p-3 hover:bg-slate-50 text-slate-800 font-medium text-sm border-b last:border-b-0 border-slate-100"
-                            >
-                              {p.name} <span className="text-slate-400 font-normal">({p.email})</span>
-                            </button>
-                          ))}
-                        {patients.filter(p => p.name.toLowerCase().includes(patientSearch.toLowerCase()) || p.email.toLowerCase().includes(patientSearch.toLowerCase())).length === 0 && (
-                          <div className="p-3 text-slate-400 text-sm text-center">No patient found</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <SearchableSelect
+                    options={patients.map(p => ({ value: p._id, label: p.name, sublabel: p.email, keywords: p.phoneNumber }))}
+                    value={patientId}
+                    onChange={setPatientId}
+                    placeholder="Type to search patient..."
+                    emptyText="No patient found"
+                  />
                 </div>
 
                 {/* Itemized list creator */}
@@ -748,9 +679,8 @@ export default function AdminBillingPage() {
                           <select
                             value={item.name}
                             onChange={(e) => {
-                              const updated = [...items];
-                              updated[idx].name = e.target.value;
-                              setItems(updated);
+                              const name = e.target.value;
+                              setItems(items.map((it, i) => i === idx ? { ...it, name } : it));
                             }}
                             className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
                           >
@@ -766,9 +696,8 @@ export default function AdminBillingPage() {
                               placeholder="Enter custom treatment type..."
                               value={item.customName || ''}
                               onChange={(e) => {
-                                const updated = [...items];
-                                updated[idx].customName = e.target.value;
-                                setItems(updated);
+                                const customName = e.target.value;
+                                setItems(items.map((it, i) => i === idx ? { ...it, customName } : it));
                               }}
                               className="w-full p-2 rounded-lg border border-slate-300 text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                               required
@@ -782,9 +711,8 @@ export default function AdminBillingPage() {
                             placeholder="Cost"
                             value={item.cost ?? ''}
                             onChange={(e) => {
-                              const updated = [...items];
-                              updated[idx].cost = e.target.value;
-                              setItems(updated);
+                              const cost = e.target.value;
+                              setItems(items.map((it, i) => i === idx ? { ...it, cost } : it));
                             }}
                             className="w-full p-2.5 rounded-lg border border-slate-350 text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-semibold"
                             required
@@ -886,9 +814,8 @@ export default function AdminBillingPage() {
                         <select
                           value={item.name}
                           onChange={(e) => {
-                            const updated = [...items];
-                            updated[idx].name = e.target.value;
-                            setItems(updated);
+                            const name = e.target.value;
+                            setItems(items.map((it, i) => i === idx ? { ...it, name } : it));
                           }}
                           className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
                         >
@@ -903,9 +830,8 @@ export default function AdminBillingPage() {
                             placeholder="Enter custom treatment type..."
                             value={item.customName || ''}
                             onChange={(e) => {
-                              const updated = [...items];
-                              updated[idx].customName = e.target.value;
-                              setItems(updated);
+                              const customName = e.target.value;
+                              setItems(items.map((it, i) => i === idx ? { ...it, customName } : it));
                             }}
                             className="w-full p-2 rounded-lg border border-slate-300 text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                             required
@@ -919,9 +845,8 @@ export default function AdminBillingPage() {
                           placeholder="Cost"
                           value={item.cost ?? ''}
                           onChange={(e) => {
-                            const updated = [...items];
-                            updated[idx].cost = e.target.value;
-                            setItems(updated);
+                            const cost = e.target.value;
+                            setItems(items.map((it, i) => i === idx ? { ...it, cost } : it));
                           }}
                           className="w-full p-2.5 rounded-lg border border-slate-350 text-slate-800 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 font-semibold"
                           required

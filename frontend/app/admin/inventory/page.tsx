@@ -336,7 +336,7 @@ export default function InventoryPage() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `DentCare_Inventory_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
+        a.download = `DentPlus_Inventory_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
         document.body.appendChild(a);
         a.click();
         a.remove();

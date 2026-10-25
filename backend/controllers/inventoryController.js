@@ -276,7 +276,7 @@ export const getInventoryReportPdf = async (req, res) => {
     doc.pipe(res);
 
     // Header
-    doc.fillColor('#0ea5e9').fontSize(24).text('DentCare Dental Clinic', { align: 'center' });
+    doc.fillColor('#0ea5e9').fontSize(24).text('DentPlus', { align: 'center' });
     doc.moveDown(0.5);
     doc.fillColor('#475569').fontSize(14).text('Inventory Status Report', { align: 'center' });
     doc.moveDown(1);
@@ -367,8 +367,19 @@ export const getInventoryReportPdf = async (req, res) => {
       currentY += 20;
     });
 
-    doc.moveDown(3);
-    doc.fillColor('#64748b').fontSize(8).text('End of Inventory Report. Official DentCare Clinic documentation.', { align: 'center' });
+    // Table cells leave the cursor at the last column, so pin the footer to the full page width
+    const footerWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    let footerY = currentY + 30;
+    if (footerY > doc.page.height - doc.page.margins.bottom - 20) {
+      doc.addPage();
+      footerY = doc.page.margins.top;
+    }
+    doc.fillColor('#64748b').fontSize(8).text(
+      'End of Inventory Report. Official DentPlus documentation.',
+      doc.page.margins.left,
+      footerY,
+      { width: footerWidth, align: 'center' }
+    );
 
     doc.end();
   } catch (error) {
