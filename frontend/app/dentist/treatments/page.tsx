@@ -581,10 +581,11 @@ export default function DentistTreatmentsPage() {
                     </button>
                     <button
                       onClick={() => handleDeletePlan(plan._id)}
-                      className="p-2 text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                      className="px-4 py-2 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
                       title="Delete Treatment Plan"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -597,7 +598,7 @@ export default function DentistTreatmentsPage() {
       {/* --- CREATE TREATMENT PLAN MODAL --- */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsAddModalOpen(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-2 bg-slate-100 rounded-full"
@@ -623,7 +624,7 @@ export default function DentistTreatmentsPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Root Canal Therapy - Lower Right First Molar"
+                  placeholder="Enter treatment title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -634,7 +635,7 @@ export default function DentistTreatmentsPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-1">Diagnosis & Findings</label>
                 <input
                   type="text"
-                  placeholder="e.g. Irreversible pulpitis, symptomatic periapical periodontitis"
+                  placeholder="Enter clinical diagnosis"
                   value={formData.diagnosis}
                   onChange={(e) => setFormData({ ...formData, diagnosis: e.target.value })}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -645,7 +646,7 @@ export default function DentistTreatmentsPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-1">Treatment Plan & Steps *</label>
                 <textarea
                   required
-                  placeholder="1. Pulpectomy and canal disinfection&#10;2. Master cone fit and warm vertical obturation&#10;3. Fiber post placement and crown preparation"
+                  placeholder="Enter the planned treatment steps"
                   value={formData.treatmentPlan}
                   onChange={(e) => setFormData({ ...formData, treatmentPlan: e.target.value })}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 h-28 resize-none text-sm"
@@ -655,7 +656,7 @@ export default function DentistTreatmentsPage() {
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Treatment Done (Today / Completed Steps)</label>
                 <textarea
-                  placeholder="e.g. Pulp extirpation completed under rubber dam, dressed with Ca(OH)2"
+                  placeholder="Describe the treatment completed so far"
                   value={formData.treatmentDone}
                   onChange={(e) => setFormData({ ...formData, treatmentDone: e.target.value })}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none text-sm"
@@ -681,7 +682,7 @@ export default function DentistTreatmentsPage() {
                   <input
                     type="number"
                     min="0"
-                    placeholder="e.g. 25000"
+                    placeholder="Enter estimated cost"
                     value={formData.estimatedCost}
                     onChange={(e) => setFormData({ ...formData, estimatedCost: parseInt(e.target.value) || 0 })}
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -703,24 +704,24 @@ export default function DentistTreatmentsPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-1">Doctor Notes</label>
                 <input
                   type="text"
-                  placeholder="e.g. Patient advised soft diet, analgesics prescribed"
+                  placeholder="Enter additional notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer"
+                  className="px-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer text-sm"
                 >
                   Save & Notify Patient
                 </button>
@@ -733,7 +734,7 @@ export default function DentistTreatmentsPage() {
       {/* --- EDIT TREATMENT PLAN MODAL --- */}
       {isEditModalOpen && selectedPlan && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsEditModalOpen(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-2 bg-slate-100 rounded-full"
@@ -832,17 +833,17 @@ export default function DentistTreatmentsPage() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer"
+                  className="px-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer text-sm"
                 >
                   Update & Save
                 </button>

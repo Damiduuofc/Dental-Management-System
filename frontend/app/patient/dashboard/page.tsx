@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import PatientSidebar from "@/components/patient/Sidebar";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import { formatDoctorName } from "@/lib/utils";
 
 interface Appointment {
   _id: string;
@@ -83,6 +84,7 @@ export default function PatientDashboard() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [patient, setPatient] = useState<any>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dentists, setDentists] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
@@ -333,6 +335,16 @@ export default function PatientDashboard() {
     }
   };
 
+  const searchLower = searchQuery.toLowerCase().trim();
+  const searchedAppointments = appointments.filter(appt =>
+    !searchLower ||
+    [appt.treatment, appt.dentist?.fullName, appt.status, appt.time, new Date(appt.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })]
+      .some(field => field?.toLowerCase().includes(searchLower))
+  );
+  const searchedNotifications = notifications.filter(n =>
+    !searchLower || n.title?.toLowerCase().includes(searchLower) || n.message?.toLowerCase().includes(searchLower)
+  );
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
       <PatientSidebar />
@@ -345,6 +357,8 @@ export default function PatientDashboard() {
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               placeholder="Search appointments, doctor..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 w-72 rounded-full border border-slate-200 bg-white py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
             />
           </div>
@@ -404,13 +418,13 @@ export default function PatientDashboard() {
                 </button>
               </div>
               
-              {appointments.filter(a => a.status !== 'Cancelled' && a.status !== 'Completed').length === 0 ? (
+              {searchedAppointments.filter(a => a.status !== 'Cancelled' && a.status !== 'Completed').length === 0 ? (
                 <div className="bg-white rounded-3xl p-8 border text-center text-slate-500 font-medium shadow-sm">
                   No upcoming appointments. Click "Book Appointment" to schedule one.
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {appointments.filter(a => a.status !== 'Cancelled' && a.status !== 'Completed').slice(0, 2).map((appt) => {
+                  {searchedAppointments.filter(a => a.status !== 'Cancelled' && a.status !== 'Completed').slice(0, 2).map((appt) => {
                     const formattedDate = new Date(appt.date).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
@@ -427,7 +441,7 @@ export default function PatientDashboard() {
                               alt="Doctor Avatar"
                             />
                             <div>
-                              <h3 className="font-bold text-slate-800">Dr. {appt.dentist?.fullName || "General Dentist"}</h3>
+                              <h3 className="font-bold text-slate-800">{formatDoctorName(appt.dentist?.fullName || "General Dentist")}</h3>
                               <p className="text-slate-500 text-sm font-semibold text-blue-600">{appt.treatment}</p>
                               <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 font-medium">
                                 <Clock size={14} />
@@ -472,17 +486,19 @@ export default function PatientDashboard() {
                 </button>
               </div>
               
-              {notifications.length === 0 ? (
+              {searchedNotifications.length === 0 ? (
                 <div className="bg-white rounded-3xl p-6 border text-center text-slate-400 text-sm font-medium shadow-sm">
                   No recent alerts.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {notifications.slice(0, 3).map((notif) => (
+                  {searchedNotifications.slice(0, 3).map((notif) => (
                     <div 
                       key={notif._id} 
-                      className={`border rounded-2xl p-4 transition ${
-                        notif.read ? "bg-white border-slate-100 shadow-sm" : "bg-blue-50 border-blue-100 shadow-sm"
+                      className={`relative border rounded-2xl p-4 transition ${
+                        notif.read
+                          ? "bg-white border-slate-100 shadow-sm opacity-80"
+                          : "bg-blue-50 border-blue-200 border-l-4 border-l-blue-600 shadow-md"
                       }`}
                     >
                       <div className="flex gap-3">
@@ -490,7 +506,10 @@ export default function PatientDashboard() {
                           {getNotificationIcon(notif.type)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-sm text-slate-800">{notif.title}</h4>
+                          {!notif.read && (
+                            <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider text-white bg-blue-600 px-1.5 py-0.5 rounded">New</span>
+                          )}
+                          <h4 className={`text-sm pr-10 ${notif.read ? "font-semibold text-slate-600" : "font-bold text-slate-900"}`}>{notif.title}</h4>
                           <p className="text-xs text-slate-500 mt-0.5">{notif.message}</p>
                           <span className="text-[10px] text-slate-400 block mt-2 font-semibold">
                             {new Date(notif.createdAt).toLocaleDateString()}
@@ -509,7 +528,7 @@ export default function PatientDashboard() {
       {/* Patient Booking Modal */}
       {isBookingOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white w-[500px] max-h-[90vh] overflow-y-auto p-8 rounded-3xl shadow-2xl border">
+          <div className="bg-white w-full max-w-[500px] max-h-[90vh] p-8 rounded-3xl shadow-2xl border modal-scroll">
             <h2 className="text-2xl font-bold mb-2 text-slate-800">Book Appointment</h2>
             <p className="text-slate-500 mb-6 text-sm">Select doctor, date, and choose a time slot.</p>
 
@@ -523,7 +542,7 @@ export default function PatientDashboard() {
                 >
                   <option value="">Choose Dentist</option>
                   {dentists.map(d => (
-                    <option key={d._id} value={d._id}>Dr. {d.fullName}</option>
+                    <option key={d._id} value={d._id}>{formatDoctorName(d.fullName)}</option>
                   ))}
                 </select>
               </div>
@@ -579,18 +598,18 @@ export default function PatientDashboard() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="form-actions">
                 <button 
                   type="button"
                   onClick={() => setIsBookingOpen(false)}
-                  className="flex-1 py-3.5 rounded-2xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition cursor-pointer"
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={bookingLoading}
-                  className="flex-1 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer text-sm"
                 >
                   {bookingLoading ? "Booking..." : "Book Appointment"}
                 </button>
@@ -603,7 +622,7 @@ export default function PatientDashboard() {
       {/* Medical Records Modal */}
       {isMedicalRecordsOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsMedicalRecordsOpen(false)}
               className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
@@ -636,7 +655,7 @@ export default function PatientDashboard() {
                             <span className="block text-slate-900 font-bold text-sm mt-0.5">{formattedDate} • {appt.time}</span>
                           </div>
                           <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
-                            Dr. {appt.dentist?.fullName || "General Dentist"}
+                            {formatDoctorName(appt.dentist?.fullName || "General Dentist")}
                           </span>
                         </div>
 

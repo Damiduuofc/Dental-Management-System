@@ -118,7 +118,7 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess, patient }:
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-[500px] max-h-[90vh] overflow-y-auto p-8 rounded-3xl shadow-2xl border border-slate-100">
+      <div className="bg-white w-full max-w-[500px] max-h-[90vh] p-8 rounded-3xl shadow-2xl border border-slate-100 modal-scroll">
         <h2 className="text-2xl font-bold mb-1 text-slate-800">{patient ? "Edit Patient Details" : "Add New Patient"}</h2>
         <p className="text-slate-500 mb-6 text-sm">
           {patient ? "Modify patient details below." : "Create a new patient record and auto-generate credentials."}
@@ -223,18 +223,18 @@ export default function AddPatientModal({ isOpen, onClose, onSuccess, patient }:
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="form-actions">
             <button 
               type="button"
               onClick={onClose} 
-              className="flex-1 py-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition cursor-pointer"
+              className="btn-cancel"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={loading}
-              className="flex-1 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer"
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer text-sm"
             >
               {loading ? "Saving..." : patient ? "Save Changes" : "Save Patient"}
             </button>

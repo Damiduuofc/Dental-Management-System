@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import PatientSidebar from "@/components/patient/Sidebar";
 import ChatWindow, { Contact, MessageItem } from "@/components/ChatWindow";
 import ProfileDropdown from "@/components/ProfileDropdown";
-import { MessageSquare, Search, CheckCheck } from "lucide-react";
+import { MessageSquare, Search, Check, CheckCheck } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
 interface PatientProfile {
@@ -326,6 +326,8 @@ export default function PatientMessagesPage() {
                       className={`w-full flex items-center gap-3.5 px-4 py-3.5 text-left transition relative ${
                         isActive
                           ? "bg-blue-50/60 border-l-4 border-blue-600"
+                          : hasUnread
+                          ? "bg-blue-50/30 hover:bg-blue-50/60"
                           : "hover:bg-slate-50"
                       }`}
                     >
@@ -364,14 +366,11 @@ export default function PatientMessagesPage() {
                         {/* Bottom Row: Message snippet & Unread pill */}
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1 min-w-0 flex-1">
-                            {isLastMsgFromMe && (
-                              <CheckCheck
-                                size={14}
-                                className={`flex-shrink-0 ${
-                                  lastMsg?.read ? "text-sky-500 stroke-[2.5]" : "text-slate-400"
-                                }`}
-                              />
-                            )}
+                            {isLastMsgFromMe && (lastMsg?.read ? (
+                              <CheckCheck size={14} className="flex-shrink-0 text-emerald-500 stroke-[2.5]" />
+                            ) : (
+                              <Check size={14} className="flex-shrink-0 text-slate-400" />
+                            ))}
                             {lastMsg ? (
                               <p
                                 className={`text-xs truncate ${

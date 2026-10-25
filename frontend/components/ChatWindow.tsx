@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Send, ArrowLeft, CheckCheck, User } from 'lucide-react';
+import { Send, ArrowLeft, Check, CheckCheck, User } from 'lucide-react';
 
 export interface Contact {
   id: string;
@@ -340,11 +340,15 @@ export default function ChatWindow({
                         {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {isMe && (
-                        <span title={msg.read ? "Read" : "Delivered"}>
-                          <CheckCheck
-                            size={14}
-                            className={msg.read ? "text-sky-300 stroke-[2.5]" : "text-blue-200/80 stroke-[1.8]"}
-                          />
+                        <span title={msg.read ? "Read" : "Delivered"} className="flex items-center gap-0.5">
+                          {msg.read ? (
+                            <>
+                              <CheckCheck size={14} className="text-emerald-300 stroke-[2.5]" />
+                              <span className="font-semibold text-emerald-200">Seen</span>
+                            </>
+                          ) : (
+                            <Check size={14} className="text-blue-200/70 stroke-[2]" />
+                          )}
                         </span>
                       )}
                     </div>

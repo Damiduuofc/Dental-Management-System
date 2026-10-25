@@ -41,7 +41,7 @@ interface XRayItem {
     email: string;
   };
   title: string;
-  category: "Panoramic" | "Bitewing" | "Periapical" | "Cephalometric" | "CBCT 3D" | "Other";
+  category: "Panoramic" | "Bitewing" | "Periapical" | "Cephalometric" | "CBCT 3D";
   imageUrl: string;
   date: string;
   findings?: string;
@@ -75,7 +75,6 @@ export default function DentistXRaysPage() {
   const [patients, setPatients] = useState<PatientRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [selectedPatientFilter, setSelectedPatientFilter] = useState<string>("");
 
   // Lightbox view state
@@ -166,9 +165,6 @@ export default function DentistXRaysPage() {
   // Filtering
   useEffect(() => {
     let result = [...xrays];
-    if (categoryFilter !== "All") {
-      result = result.filter((x) => x.category === categoryFilter);
-    }
     if (selectedPatientFilter) {
       result = result.filter((x) => x.patient?._id === selectedPatientFilter);
     }
@@ -182,7 +178,7 @@ export default function DentistXRaysPage() {
       );
     }
     setFilteredXrays(result);
-  }, [xrays, categoryFilter, searchQuery, selectedPatientFilter]);
+  }, [xrays, searchQuery, selectedPatientFilter]);
 
   // File picker handler converts to base64 data url and optimizes large radiograph files
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -399,8 +395,7 @@ export default function DentistXRaysPage() {
         {/* Stats Section */}
         <section className="grid grid-cols-1 sm:grid-cols-4 gap-5 mb-8">
           <div
-            onClick={() => setCategoryFilter("All")}
-            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-blue-400 hover:scale-[1.01] transition duration-200 cursor-pointer group flex items-center gap-4"
+            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-blue-400 transition duration-200 group flex items-center gap-4"
           >
             <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl border border-blue-100 group-hover:scale-110 transition duration-200">
               <FileHeart size={26} />
@@ -412,8 +407,7 @@ export default function DentistXRaysPage() {
           </div>
 
           <div
-            onClick={() => setCategoryFilter("Panoramic")}
-            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-sky-400 hover:scale-[1.01] transition duration-200 cursor-pointer group flex items-center gap-4"
+            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-sky-400 transition duration-200 group flex items-center gap-4"
           >
             <div className="p-3.5 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100 group-hover:scale-110 transition duration-200">
               <Layers size={26} />
@@ -425,8 +419,7 @@ export default function DentistXRaysPage() {
           </div>
 
           <div
-            onClick={() => setCategoryFilter("Periapical")}
-            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-indigo-400 hover:scale-[1.01] transition duration-200 cursor-pointer group flex items-center gap-4"
+            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-indigo-400 transition duration-200 group flex items-center gap-4"
           >
             <div className="p-3.5 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100 group-hover:scale-110 transition duration-200">
               <Camera size={26} />
@@ -438,8 +431,7 @@ export default function DentistXRaysPage() {
           </div>
 
           <div
-            onClick={() => setCategoryFilter("Bitewing")}
-            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-amber-400 hover:scale-[1.01] transition duration-200 cursor-pointer group flex items-center gap-4"
+            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-amber-400 transition duration-200 group flex items-center gap-4"
           >
             <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl border border-amber-100 group-hover:scale-110 transition duration-200">
               <ZoomIn size={26} />
@@ -493,23 +485,6 @@ export default function DentistXRaysPage() {
             </div>
           </div>
 
-          <div className="flex gap-1.5 bg-slate-100 p-1.5 rounded-xl text-xs font-bold overflow-x-auto w-full lg:w-auto">
-            {["All", "Panoramic", "Periapical", "Bitewing", "Cephalometric", "CBCT 3D"].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                className={`px-3.5 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap ${
-                  categoryFilter === cat
-                    ? cat === "All"
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
         </section>
 
         {/* Active Patient Filter Banner */}
@@ -650,17 +625,17 @@ export default function DentistXRaysPage() {
                             });
                             setIsEditModalOpen(true);
                           }}
-                          className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                          className="px-2 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer text-xs font-bold flex items-center gap-1"
                           title="Edit Record"
                         >
-                          <Edit3 size={15} />
+                          <Edit3 size={14} /> Edit
                         </button>
                         <button
                           onClick={() => handleDeleteXRay(item._id)}
-                          className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                          className="px-2 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer text-xs font-bold flex items-center gap-1"
                           title="Delete Record"
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={14} /> Delete
                         </button>
                       </div>
                     </div>
@@ -732,7 +707,7 @@ export default function DentistXRaysPage() {
       {/* --- ADD X-RAY RECORD MODAL --- */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsAddModalOpen(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-2 bg-slate-100 rounded-full"
@@ -759,7 +734,7 @@ export default function DentistXRaysPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Panoramic Radiograph (Full Mouth)"
+                    placeholder="Enter X-ray title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -778,7 +753,6 @@ export default function DentistXRaysPage() {
                     <option value="Bitewing">Bitewing</option>
                     <option value="Cephalometric">Cephalometric</option>
                     <option value="CBCT 3D">CBCT 3D</option>
-                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
@@ -845,7 +819,7 @@ export default function DentistXRaysPage() {
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Radiological Findings</label>
                 <textarea
-                  placeholder="e.g. Radiolucency visible around apex of tooth #14. Interdental bone levels preserved. No evidence of cysts or root fractures."
+                  placeholder="Describe the radiographic findings"
                   value={formData.findings}
                   onChange={(e) => setFormData({ ...formData, findings: e.target.value })}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none text-sm"
@@ -856,24 +830,24 @@ export default function DentistXRaysPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-1">Clinical Notes</label>
                 <input
                   type="text"
-                  placeholder="e.g. Recommended follow-up X-ray in 6 months post-treatment"
+                  placeholder="Enter additional notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer"
+                  className="px-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer text-sm"
                 >
                   Save &amp; Notify Patient
                 </button>
@@ -886,7 +860,7 @@ export default function DentistXRaysPage() {
       {/* --- EDIT X-RAY FINDINGS MODAL --- */}
       {isEditModalOpen && selectedXray && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsEditModalOpen(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-2 bg-slate-100 rounded-full"
@@ -921,7 +895,6 @@ export default function DentistXRaysPage() {
                     <option value="Bitewing">Bitewing</option>
                     <option value="Cephalometric">Cephalometric</option>
                     <option value="CBCT 3D">CBCT 3D</option>
-                    <option value="Other">Other</option>
                   </select>
                 </div>
                 <div>
@@ -954,17 +927,17 @@ export default function DentistXRaysPage() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer"
+                  className="px-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer text-sm"
                 >
                   Save Changes
                 </button>

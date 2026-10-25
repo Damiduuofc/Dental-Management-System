@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import PatientSidebar from "@/components/patient/Sidebar";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import { formatDoctorName } from "@/lib/utils";
 
 interface BillItem {
   name: string;
@@ -38,6 +39,7 @@ export default function PatientBilling() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [patient, setPatient] = useState<any>(null);
   const [bills, setBills] = useState<Bill[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
   const [expandedBillId, setExpandedBillId] = useState<string | null>(null);
 
@@ -185,6 +187,13 @@ export default function PatientBilling() {
     .filter(b => b.status === 'Unpaid' || b.status === 'Pending' || b.status === 'Partially Paid')
     .reduce((sum, b) => sum + (b.dueAmount !== undefined ? b.dueAmount : b.amount), 0);
 
+  const searchLower = searchQuery.toLowerCase().trim();
+  const searchedBills = bills.filter(bill =>
+    !searchLower ||
+    [bill.treatment, bill.status, bill.dentist?.fullName, bill._id, String(bill.amount), new Date(bill.date).toLocaleDateString()]
+      .some(field => field?.toLowerCase().includes(searchLower))
+  );
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
       <PatientSidebar />
@@ -197,6 +206,8 @@ export default function PatientBilling() {
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               placeholder="Search invoices..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 w-72 rounded-full border border-slate-200 bg-white py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
             />
           </div>
@@ -230,12 +241,12 @@ export default function PatientBilling() {
           <div className="grid md:grid-cols-3 gap-6">
             {/* Bills List */}
             <div className="md:col-span-2 space-y-4">
-              {bills.length === 0 ? (
+              {searchedBills.length === 0 ? (
                 <div className="bg-white rounded-3xl p-12 border text-center text-slate-500 font-medium shadow-sm">
-                  No billing statements found.
+                  {searchLower ? "No invoices match your search." : "No billing statements found."}
                 </div>
               ) : (
-                bills.map((bill) => {
+                searchedBills.map((bill) => {
                   const isExpanded = expandedBillId === bill._id;
                   return (
                     <div key={bill._id} className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition overflow-hidden">
@@ -307,7 +318,7 @@ export default function PatientBilling() {
                                   alt="Dentist Profile"
                                 />
                                 <div>
-                                  <p className="text-sm font-bold text-slate-800">Dr. {bill.dentist.fullName}</p>
+                                  <p className="text-sm font-bold text-slate-800">{formatDoctorName(bill.dentist.fullName)}</p>
                                   <p className="text-xs text-slate-505 text-slate-500 font-semibold">{bill.dentist.email} • {bill.dentist.phoneNumber}</p>
                                 </div>
                               </div>

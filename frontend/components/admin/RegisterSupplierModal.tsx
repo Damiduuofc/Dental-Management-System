@@ -88,7 +88,7 @@ export default function RegisterSupplierModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] modal-scroll">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition"
@@ -114,7 +114,7 @@ export default function RegisterSupplierModal({
               <input
                 type="text"
                 required
-                placeholder="e.g. Lanka Dental Logistics"
+                placeholder="Enter company name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -129,7 +129,7 @@ export default function RegisterSupplierModal({
                 <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="e.g. John Doe"
+                  placeholder="Enter contact person name"
                   value={formData.contactPerson}
                   onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -144,7 +144,7 @@ export default function RegisterSupplierModal({
                 <input
                   type="email"
                   required
-                  placeholder="orders@supplier.lk"
+                  placeholder="Enter email address"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -160,7 +160,7 @@ export default function RegisterSupplierModal({
                 <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="e.g. +94 11 234 5678"
+                  placeholder="Enter phone number"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -174,7 +174,7 @@ export default function RegisterSupplierModal({
                 <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="e.g. Colombo, Sri Lanka"
+                  placeholder="Enter address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -211,25 +211,25 @@ export default function RegisterSupplierModal({
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-1">Notes / Terms</label>
             <textarea
-              placeholder="e.g. 5-day delivery guarantee, minimum order Rs. 5000"
+              placeholder="Enter supplier terms or notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none text-sm"
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="form-actions">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              className="btn-cancel"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer disabled:opacity-50"
+              className="px-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer disabled:opacity-50 text-sm"
             >
               {submitting ? "Registering..." : "Register Supplier"}
             </button>

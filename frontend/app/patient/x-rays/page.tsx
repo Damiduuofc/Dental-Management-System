@@ -14,6 +14,7 @@ import {
   SunMedium,
   X
 } from "lucide-react";
+import { formatDoctorName } from "@/lib/utils";
 
 interface XRayItem {
   _id: string;
@@ -23,7 +24,7 @@ interface XRayItem {
     email: string;
   };
   title: string;
-  category: "Panoramic" | "Bitewing" | "Periapical" | "Cephalometric" | "CBCT 3D" | "Other";
+  category: "Panoramic" | "Bitewing" | "Periapical" | "Cephalometric" | "CBCT 3D";
   imageUrl: string;
   date: string;
   findings?: string;
@@ -37,7 +38,6 @@ export default function PatientXRaysPage() {
   const [filteredXrays, setFilteredXrays] = useState<XRayItem[]>([]);
   const [patient, setPatient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("All");
 
   // Lightbox view state
   const [lightboxXray, setLightboxXray] = useState<XRayItem | null>(null);
@@ -90,12 +90,8 @@ export default function PatientXRaysPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedCategory === "All") {
-      setFilteredXrays(xrays);
-    } else {
-      setFilteredXrays(xrays.filter((x) => x.category === selectedCategory));
-    }
-  }, [selectedCategory, xrays]);
+    setFilteredXrays(xrays);
+  }, [xrays]);
 
   if (loading) {
     return (
@@ -130,25 +126,6 @@ export default function PatientXRaysPage() {
             <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} />
           </div>
         </header>
-
-        {/* Filter Chips */}
-        {xrays.length > 0 && (
-          <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-            {["All", "Panoramic", "Periapical", "Bitewing", "Cephalometric", "CBCT 3D"].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-2xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
-                  selectedCategory === cat
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        )}
 
         {filteredXrays.length === 0 ? (
           <div className="bg-white rounded-3xl border border-slate-200 p-16 text-center text-slate-400 font-semibold shadow-sm max-w-2xl mx-auto mt-12">
@@ -199,7 +176,7 @@ export default function PatientXRaysPage() {
                     <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
                       <span className="flex items-center gap-1 text-slate-800 font-semibold">
                         <User size={14} className="text-blue-600" />
-                        Dr. {item.dentist?.fullName || "Dentist"}
+                        {formatDoctorName(item.dentist?.fullName || "Dentist")}
                       </span>
                       <span className="flex items-center gap-1">
                         <Calendar size={13} />
@@ -249,7 +226,7 @@ export default function PatientXRaysPage() {
                 <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">{lightboxXray.category} Radiograph</span>
                 <h3 className="text-2xl font-black">{lightboxXray.title}</h3>
                 <p className="text-slate-400 text-xs">
-                  Attending Doctor: Dr. {lightboxXray.dentist?.fullName || "Attending Dentist"} | Date: {lightboxXray.date ? new Date(lightboxXray.date).toLocaleDateString() : "N/A"}
+                  Attending Doctor: {formatDoctorName(lightboxXray.dentist?.fullName || "Attending Dentist")} | Date: {lightboxXray.date ? new Date(lightboxXray.date).toLocaleDateString() : "N/A"}
                 </p>
               </div>
 

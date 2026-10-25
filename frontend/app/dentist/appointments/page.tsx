@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DentistSidebar from "@/components/dentist/Sidebar";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import TimeSlotPicker from "@/components/TimeSlotPicker";
+import { getTodayString, toDateInputValue, timeToMinutes } from "@/lib/timeSlots";
 import PatientDetailsModal from "@/components/PatientDetailsModal";
 import { 
   Calendar, 
@@ -74,13 +76,13 @@ export default function DentistAppointmentsPage() {
   // Reschedule states
   const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
   const [rescheduleDate, setRescheduleDate] = useState("");
-  const [rescheduleTime, setRescheduleTime] = useState("09:00 AM");
+  const [rescheduleTime, setRescheduleTime] = useState("");
 
   // New Appointment states
   const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
   const [newApptPatientId, setNewApptPatientId] = useState("");
   const [newApptDate, setNewApptDate] = useState("");
-  const [newApptTime, setNewApptTime] = useState("09:00 AM");
+  const [newApptTime, setNewApptTime] = useState("");
   const [newApptTreatment, setNewApptTreatment] = useState("Regular Checkup");
   const [newApptNotes, setNewApptNotes] = useState("");
 
@@ -110,7 +112,6 @@ export default function DentistAppointmentsPage() {
           headers: { 'Authorization': `Bearer ${token}` }
         }
       );
-      fetchNotifications();
     } catch (err) {
       console.error("Error marking notifications as read:", err);
     }
@@ -200,6 +201,10 @@ export default function DentistAppointmentsPage() {
   const handleRescheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAppt) return;
+    if (!rescheduleDate || !rescheduleTime) {
+      alert("Please select a new date and an available time slot.");
+      return;
+    }
 
     try {
       const token = localStorage.getItem("token");
@@ -262,7 +267,7 @@ export default function DentistAppointmentsPage() {
         setIsNewAppointmentOpen(false);
         setNewApptPatientId("");
         setNewApptDate("");
-        setNewApptTime("09:00 AM");
+        setNewApptTime("");
         setNewApptTreatment("Regular Checkup");
         setNewApptNotes("");
         fetchData(user?.id || "");
@@ -329,6 +334,8 @@ export default function DentistAppointmentsPage() {
                   setIsNotifOpen(!isNotifOpen);
                   if (!isNotifOpen) {
                     markNotificationsAsRead();
+                  } else {
+                    fetchNotifications();
                   }
                 }}
                 className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition cursor-pointer relative"
@@ -344,7 +351,10 @@ export default function DentistAppointmentsPage() {
                   <div className="flex justify-between items-center border-b pb-2 mb-3">
                     <h4 className="font-bold text-slate-800 text-sm">Notifications</h4>
                     <button 
-                      onClick={() => setIsNotifOpen(false)}
+                      onClick={() => {
+                        setIsNotifOpen(false);
+                        fetchNotifications();
+                      }}
                       className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
                     >
                       Close
@@ -355,8 +365,11 @@ export default function DentistAppointmentsPage() {
                       <p className="text-xs text-slate-400 text-center py-4 font-medium">No notifications yet.</p>
                     ) : (
                       notifications.map(notif => (
-                        <div key={notif._id} className={`p-3 rounded-xl border text-xs leading-relaxed ${notif.read ? 'bg-white border-slate-100 text-slate-600' : 'bg-blue-50/50 border-blue-100 text-slate-800 font-medium'}`}>
-                          <p className="font-bold text-slate-900 mb-0.5">{notif.title}</p>
+                        <div key={notif._id} className={`relative p-3 pl-4 rounded-xl border text-xs leading-relaxed ${notif.read ? 'bg-white border-slate-100 text-slate-500' : 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-600 text-slate-800 font-medium'}`}>
+                          {!notif.read && (
+                            <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider text-white bg-blue-600 px-1.5 py-0.5 rounded">New</span>
+                          )}
+                          <p className={`mb-0.5 pr-10 ${notif.read ? 'font-semibold text-slate-600' : 'font-bold text-slate-900'}`}>{notif.title}</p>
                           <p>{notif.message}</p>
                           <span className="text-[10px] text-slate-400 mt-1 block">
                             {new Date(notif.createdAt).toLocaleDateString()} at {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -503,7 +516,7 @@ export default function DentistAppointmentsPage() {
       {/* Reschedule Modal */}
       {isRescheduleOpen && selectedAppt && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Reschedule Appointment</h2>
             <p className="text-slate-500 text-sm mb-6 font-medium">Select a new date and time slot for this session.</p>
 
@@ -512,6 +525,7 @@ export default function DentistAppointmentsPage() {
                 <label className="block text-slate-700 text-sm font-bold mb-1.5">New Date</label>
                 <input
                   type="date"
+                  min={getTodayString()}
                   value={rescheduleDate}
                   onChange={(e) => setRescheduleDate(e.target.value)}
                   className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-semibold"
@@ -521,35 +535,26 @@ export default function DentistAppointmentsPage() {
 
               <div>
                 <label className="block text-slate-700 text-sm font-bold mb-1.5">New Time Slot</label>
-                <select
+                <TimeSlotPicker
+                  dentistId={user?.id}
+                  date={rescheduleDate}
                   value={rescheduleTime}
-                  onChange={(e) => setRescheduleTime(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
-                  required
-                >
-                  <option value="09:00 AM">09:00 AM</option>
-                  <option value="09:30 AM">09:30 AM</option>
-                  <option value="10:00 AM">10:00 AM</option>
-                  <option value="10:45 AM">10:45 AM</option>
-                  <option value="11:30 AM">11:30 AM</option>
-                  <option value="01:15 PM">01:15 PM</option>
-                  <option value="02:00 PM">02:00 PM</option>
-                  <option value="03:00 PM">03:00 PM</option>
-                  <option value="04:00 PM">04:00 PM</option>
-                </select>
+                  onChange={setRescheduleTime}
+                  ignoreSlot={{ date: toDateInputValue(selectedAppt.date), time: selectedAppt.time }}
+                />
               </div>
 
-              <div className="flex gap-4 pt-4 border-t mt-6">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={() => setIsRescheduleOpen(false)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer text-sm"
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-100 cursor-pointer text-sm"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-100 cursor-pointer text-sm"
                 >
                   Reschedule
                 </button>
@@ -562,7 +567,7 @@ export default function DentistAppointmentsPage() {
       {/* Book Session Modal */}
       {isNewAppointmentOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Book Appointment</h2>
             <p className="text-slate-500 text-sm mb-6 font-medium">Create a new treatment session appointment.</p>
 
@@ -586,6 +591,7 @@ export default function DentistAppointmentsPage() {
                 <label className="block text-slate-700 text-sm font-bold mb-1.5">Appointment Date</label>
                 <input
                   type="date"
+                  min={getTodayString()}
                   value={newApptDate}
                   onChange={(e) => setNewApptDate(e.target.value)}
                   className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-semibold"
@@ -595,22 +601,12 @@ export default function DentistAppointmentsPage() {
 
               <div>
                 <label className="block text-slate-700 text-sm font-bold mb-1.5">Time Slot</label>
-                <select
+                <TimeSlotPicker
+                  dentistId={user?.id}
+                  date={newApptDate}
                   value={newApptTime}
-                  onChange={(e) => setNewApptTime(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold"
-                  required
-                >
-                  <option value="09:00 AM">09:00 AM</option>
-                  <option value="09:30 AM">09:30 AM</option>
-                  <option value="10:00 AM">10:00 AM</option>
-                  <option value="10:45 AM">10:45 AM</option>
-                  <option value="11:30 AM">11:30 AM</option>
-                  <option value="01:15 PM">01:15 PM</option>
-                  <option value="02:00 PM">02:00 PM</option>
-                  <option value="03:00 PM">03:00 PM</option>
-                  <option value="04:00 PM">04:00 PM</option>
-                </select>
+                  onChange={setNewApptTime}
+                />
               </div>
 
 
@@ -625,17 +621,17 @@ export default function DentistAppointmentsPage() {
                 />
               </div>
 
-              <div className="flex gap-4 pt-4 border-t mt-6">
+              <div className="form-actions">
                 <button
                   type="button"
                   onClick={() => setIsNewAppointmentOpen(false)}
-                  className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer text-sm"
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-100 cursor-pointer text-sm"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-100 cursor-pointer text-sm"
                 >
                   Schedule
                 </button>

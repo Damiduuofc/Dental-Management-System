@@ -118,7 +118,7 @@ export default function CheckInModal({ isOpen, onClose, patient, onSuccess }: Ch
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white w-[600px] max-h-[90vh] overflow-y-auto p-8 rounded-3xl shadow-2xl border border-slate-100 relative">
+      <div className="bg-white w-full max-w-[600px] max-h-[90vh] p-8 rounded-3xl shadow-2xl border border-slate-100 relative modal-scroll">
         {/* Close Button */}
         <button 
           onClick={onClose}
@@ -158,7 +158,7 @@ export default function CheckInModal({ isOpen, onClose, patient, onSuccess }: Ch
               Allergies & Medical Warnings
             </label>
             <textarea
-              placeholder="List allergies or medical conditions (e.g. Penicillin allergy, Diabetes...)"
+              placeholder="List allergies or medical conditions"
               value={allergies}
               onChange={e => setAllergies(e.target.value)}
               className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium text-sm h-18 resize-none"
@@ -172,7 +172,7 @@ export default function CheckInModal({ isOpen, onClose, patient, onSuccess }: Ch
               Patient Complains
             </label>
             <textarea
-              placeholder="What concerns or issues did the patient present? (e.g. Toothache, swollen gums...)"
+              placeholder="What concerns or issues did the patient present?"
               value={complains}
               onChange={e => setComplains(e.target.value)}
               className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium text-sm h-18 resize-none"
@@ -201,7 +201,7 @@ export default function CheckInModal({ isOpen, onClose, patient, onSuccess }: Ch
               Proposed Treatment Plan
             </label>
             <textarea
-              placeholder="Planned clinical steps (e.g. Extraction on tooth #14, filling...)"
+              placeholder="Planned clinical steps"
               value={treatmentPlan}
               onChange={e => setTreatmentPlan(e.target.value)}
               className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium text-sm h-18 resize-none"
@@ -222,18 +222,18 @@ export default function CheckInModal({ isOpen, onClose, patient, onSuccess }: Ch
             />
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-slate-100">
+          <div className="form-actions">
             <button 
               type="button"
               onClick={onClose} 
-              className="flex-1 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition cursor-pointer text-sm"
+              className="btn-cancel"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={loading || fetching}
-              className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer text-sm"
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer text-sm"
             >
               {loading ? "Checking in..." : "Check In Patient"}
             </button>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Plus, Calendar, Clock, Check, X } from 'lucide-react';
 import Sidebar from '@/components/admin/Sidebar';
 import AppointmentModal from '@/components/AppointmentModal';
+import { formatDoctorName } from "@/lib/utils";
 
 interface PatientData {
   _id: string;
@@ -222,7 +223,7 @@ export default function AppointmentsPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-xl mb-5 text-sm text-slate-600 font-medium">
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-400 font-normal">Dentist:</span> {appt.dentist?.fullName || 'N/A'}
+                      <span className="text-slate-400 font-normal">Dentist:</span> {formatDoctorName(appt.dentist?.fullName) || 'N/A'}
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar size={15} className="text-slate-400" /> {formattedDate}

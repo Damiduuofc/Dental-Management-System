@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDoctorName } from "@/lib/utils";
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Mail, Phone, Loader2 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
@@ -176,7 +177,7 @@ export default function AccountCreationPage() {
                     {member.fullName?.charAt(0) || "?"}
                   </div>
                   <div>
-                    <h3 className="font-black text-lg">{member.fullName}</h3>
+                    <h3 className="font-black text-lg">{member.role === 'dentist' ? formatDoctorName(member.fullName) : member.fullName}</h3>
                     <p className="text-sm text-blue-600 font-bold uppercase">{member.role}</p>
                   </div>
                 </div>

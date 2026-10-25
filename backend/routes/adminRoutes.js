@@ -42,6 +42,7 @@ import {
 } from "../controllers/adminController.js";
 import { verifyToken, isAdmin, isStaff, isAdminOrAssistant } from '../middleware/authMiddleware.js';
 import { getAuthUrl } from '../utils/googleCalendarService.js';
+import { getBookedSlots } from '../controllers/patientController.js';
 
 const router = express.Router();
 
@@ -66,6 +67,7 @@ router.get('/patients', verifyToken, isStaff, getPatients);
 router.post('/patients', verifyToken, isStaff, addPatient);
 router.put('/patients/:id', verifyToken, isStaff, updatePatient);
 router.get('/appointments', verifyToken, isStaff, getAppointments);
+router.get('/appointments/booked-slots', verifyToken, isStaff, getBookedSlots);
 router.post('/appointments', verifyToken, isStaff, createAppointment);
 router.put('/appointments/:id', verifyToken, isStaff, updateAppointment);
 router.delete('/appointments/:id', verifyToken, isStaff, deleteAppointment);

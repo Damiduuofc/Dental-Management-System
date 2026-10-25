@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import PatientSidebar from "@/components/patient/Sidebar";
 import ProfileDropdown from "@/components/ProfileDropdown";
+import { formatDoctorName } from "@/lib/utils";
 
 interface Appointment {
   _id: string;
@@ -66,6 +67,7 @@ export default function PatientAppointments() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [patient, setPatient] = useState<any>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dentists, setDentists] = useState<any[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   
@@ -267,6 +269,13 @@ export default function PatientAppointments() {
     }
   };
 
+  const searchLower = searchQuery.toLowerCase().trim();
+  const searchedAppointments = appointments.filter(appt =>
+    !searchLower ||
+    [appt.treatment, appt.dentist?.fullName, appt.status, appt.time, new Date(appt.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })]
+      .some(field => field?.toLowerCase().includes(searchLower))
+  );
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
       <PatientSidebar />
@@ -279,6 +288,8 @@ export default function PatientAppointments() {
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               placeholder="Search appointments, doctor..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 w-72 rounded-full border border-slate-200 bg-white py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
             />
           </div>
@@ -306,13 +317,13 @@ export default function PatientAppointments() {
             </button>
           </div>
 
-          {appointments.length === 0 ? (
+          {searchedAppointments.length === 0 ? (
             <div className="bg-white rounded-3xl p-12 border text-center text-slate-500 font-medium shadow-sm">
-              No appointments booked yet.
+              {searchLower ? "No appointments match your search." : "No appointments booked yet."}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {appointments.map((appt) => {
+              {searchedAppointments.map((appt) => {
                 const formattedDate = new Date(appt.date).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -329,7 +340,7 @@ export default function PatientAppointments() {
                           alt="Doctor Avatar"
                         />
                         <div>
-                          <h3 className="font-bold text-slate-800">Dr. {appt.dentist?.fullName || "General Dentist"}</h3>
+                          <h3 className="font-bold text-slate-800">{formatDoctorName(appt.dentist?.fullName || "General Dentist")}</h3>
                           <p className="text-sm font-semibold text-blue-600">{appt.treatment}</p>
                         </div>
                       </div>
@@ -372,7 +383,7 @@ export default function PatientAppointments() {
       {/* Patient Booking Modal */}
       {isBookingOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white w-[500px] max-h-[90vh] overflow-y-auto p-8 rounded-3xl shadow-2xl border">
+          <div className="bg-white w-full max-w-[500px] max-h-[90vh] p-8 rounded-3xl shadow-2xl border modal-scroll">
             <h2 className="text-2xl font-bold mb-2 text-slate-800">Book Appointment</h2>
             <p className="text-slate-500 mb-6 text-sm">Select doctor, date, and choose a time slot.</p>
 
@@ -386,7 +397,7 @@ export default function PatientAppointments() {
                 >
                   <option value="">Choose Dentist</option>
                   {dentists.map(d => (
-                    <option key={d._id} value={d._id}>Dr. {d.fullName}</option>
+                    <option key={d._id} value={d._id}>{formatDoctorName(d.fullName)}</option>
                   ))}
                 </select>
               </div>
@@ -442,18 +453,18 @@ export default function PatientAppointments() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="form-actions">
                 <button 
                   type="button"
                   onClick={() => setIsBookingOpen(false)}
-                  className="flex-1 py-3.5 rounded-2xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition cursor-pointer"
+                  className="btn-cancel"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={bookingLoading}
-                  className="flex-1 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer text-sm"
                 >
                   {bookingLoading ? "Booking..." : "Book Appointment"}
                 </button>

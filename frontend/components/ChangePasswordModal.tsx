@@ -76,7 +76,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white w-[450px] p-8 rounded-3xl shadow-2xl border border-slate-100 relative">
+      <div className="bg-white w-full max-w-[450px] p-8 rounded-3xl shadow-2xl border border-slate-100 relative max-h-[90vh] modal-scroll">
         {/* Close Button */}
         <button 
           onClick={onClose}
@@ -160,18 +160,18 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="form-actions">
             <button 
               type="button"
               onClick={onClose} 
-              className="flex-1 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition cursor-pointer text-sm"
+              className="btn-cancel"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer text-sm"
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer text-sm"
             >
               {loading ? "Updating..." : "Update"}
             </button>

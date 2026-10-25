@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDoctorName } from "@/lib/utils";
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { User, Lock, LogOut, ChevronDown } from "lucide-react";
@@ -76,11 +77,12 @@ export default function ProfileDropdown({
   }, []);
 
   // Compute initials
-  const displayName = user?.fullName || user?.name || "User";
+  const rawName = user?.fullName || user?.name || "User";
+  const displayName = user?.role === "dentist" ? formatDoctorName(rawName) : rawName;
   const userInitials =
     initialInitials ||
-    (displayName
-      ? displayName
+    (rawName
+      ? rawName
           .split(" ")
           .filter(Boolean)
           .map((n) => n[0])

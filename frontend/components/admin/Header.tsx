@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Bell, Search } from "lucide-react";
 import { io, Socket } from "socket.io-client";
+import { useRouter } from "next/navigation";
 import ProfileDropdown from "@/components/ProfileDropdown";
 
 interface Notification {
@@ -22,6 +23,8 @@ interface HeaderProps {
 }
 
 export default function Header({ title, subtitle, onSearch, showSearch = true }: HeaderProps) {
+  const router = useRouter();
+  const [searchValue, setSearchValue] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -57,16 +60,13 @@ export default function Header({ title, subtitle, onSearch, showSearch = true }:
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const res = await fetch(`${apiBase}/inventory/notifications/read`, {
+      await fetch(`${apiBase}/inventory/notifications/read`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (res.ok) {
-        setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      }
     } catch (err) {
       console.error("Error marking notifications as read:", err);
     }
@@ -145,8 +145,18 @@ export default function Header({ title, subtitle, onSearch, showSearch = true }:
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search..."
-              onChange={(e) => onSearch && onSearch(e.target.value)}
+              placeholder={onSearch ? "Search..." : "Search patients by name, phone, NIC..."}
+              value={searchValue}
+              onChange={(e) => {
+                setSearchValue(e.target.value);
+                onSearch?.(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                // Without a page-level handler, the header search acts as a global patient lookup
+                if (e.key === "Enter" && !onSearch && searchValue.trim()) {
+                  router.push(`/admin/check-in?search=${encodeURIComponent(searchValue.trim())}`);
+                }
+              }}
               className="pl-11 pr-4 py-2.5 w-72 rounded-full border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -156,10 +166,12 @@ export default function Header({ title, subtitle, onSearch, showSearch = true }:
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => {
-              setIsNotifOpen(!isNotifOpen);
-              if (!isNotifOpen && unreadCount > 0) {
+              if (isNotifOpen) {
+                setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+              } else if (unreadCount > 0) {
                 markNotificationsAsRead();
               }
+              setIsNotifOpen(!isNotifOpen);
             }}
             className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition cursor-pointer relative"
           >
@@ -174,7 +186,10 @@ export default function Header({ title, subtitle, onSearch, showSearch = true }:
               <div className="flex justify-between items-center border-b pb-2 mb-3">
                 <h4 className="font-bold text-slate-800 text-sm">Notifications</h4>
                 <button
-                  onClick={() => setIsNotifOpen(false)}
+                  onClick={() => {
+                    setIsNotifOpen(false);
+                    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+                  }}
                   className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
                 >
                   Close
@@ -187,13 +202,16 @@ export default function Header({ title, subtitle, onSearch, showSearch = true }:
                   notifications.map((notif) => (
                     <div
                       key={notif._id}
-                      className={`p-3 rounded-xl border text-xs leading-relaxed ${
+                      className={`relative p-3 pl-4 rounded-xl border text-xs leading-relaxed ${
                         notif.read
-                          ? "bg-white border-slate-100 text-slate-600"
-                          : "bg-blue-50/50 border-blue-100 text-slate-800 font-medium"
+                          ? "bg-white border-slate-100 text-slate-500"
+                          : "bg-blue-50 border-blue-200 border-l-4 border-l-blue-600 text-slate-800 font-medium"
                       }`}
                     >
-                      <p className="font-bold text-slate-900 mb-0.5">{notif.title}</p>
+                      {!notif.read && (
+                        <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider text-white bg-blue-600 px-1.5 py-0.5 rounded">New</span>
+                      )}
+                      <p className={`mb-0.5 pr-10 ${notif.read ? "font-semibold text-slate-600" : "font-bold text-slate-900"}`}>{notif.title}</p>
                       <p>{notif.message}</p>
                       <span className="text-[10px] text-slate-400 mt-1 block">
                         {new Date(notif.createdAt).toLocaleDateString()} at{" "}

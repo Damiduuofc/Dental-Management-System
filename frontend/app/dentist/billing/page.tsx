@@ -85,7 +85,6 @@ export default function DentistBillingPage() {
           headers: { 'Authorization': `Bearer ${token}` }
         }
       );
-      fetchNotifications();
     } catch (err) {
       console.error("Error marking notifications as read:", err);
     }
@@ -221,6 +220,8 @@ export default function DentistBillingPage() {
                   setIsNotifOpen(!isNotifOpen);
                   if (!isNotifOpen) {
                     markNotificationsAsRead();
+                  } else {
+                    fetchNotifications();
                   }
                 }}
                 className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition cursor-pointer relative"
@@ -236,7 +237,10 @@ export default function DentistBillingPage() {
                   <div className="flex justify-between items-center border-b pb-2 mb-3">
                     <h4 className="font-bold text-slate-800 text-sm">Notifications</h4>
                     <button 
-                      onClick={() => setIsNotifOpen(false)}
+                      onClick={() => {
+                        setIsNotifOpen(false);
+                        fetchNotifications();
+                      }}
                       className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
                     >
                       Close
@@ -247,8 +251,11 @@ export default function DentistBillingPage() {
                       <p className="text-xs text-slate-400 text-center py-4 font-medium">No notifications yet.</p>
                     ) : (
                       notifications.map(notif => (
-                        <div key={notif._id} className={`p-3 rounded-xl border text-xs leading-relaxed ${notif.read ? 'bg-white border-slate-100 text-slate-600' : 'bg-blue-50/50 border-blue-100 text-slate-800 font-medium'}`}>
-                          <p className="font-bold text-slate-900 mb-0.5">{notif.title}</p>
+                        <div key={notif._id} className={`relative p-3 pl-4 rounded-xl border text-xs leading-relaxed ${notif.read ? 'bg-white border-slate-100 text-slate-500' : 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-600 text-slate-800 font-medium'}`}>
+                          {!notif.read && (
+                            <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider text-white bg-blue-600 px-1.5 py-0.5 rounded">New</span>
+                          )}
+                          <p className={`mb-0.5 pr-10 ${notif.read ? 'font-semibold text-slate-600' : 'font-bold text-slate-900'}`}>{notif.title}</p>
                           <p>{notif.message}</p>
                           <span className="text-[10px] text-slate-400 mt-1 block">
                             {new Date(notif.createdAt).toLocaleDateString()} at {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

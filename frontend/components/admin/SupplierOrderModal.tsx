@@ -145,7 +145,7 @@ export default function SupplierOrderModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl w-full max-w-xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] modal-scroll">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition"
@@ -234,7 +234,7 @@ export default function SupplierOrderModal({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Apex Medical Supply"
+                  placeholder="Enter supplier name"
                   value={supplierName}
                   onChange={(e) => setSupplierName(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -249,7 +249,7 @@ export default function SupplierOrderModal({
                 <input
                   type="email"
                   required
-                  placeholder="orders@supplier.com"
+                  placeholder="Enter supplier email"
                   value={supplierEmail}
                   onChange={(e) => setSupplierEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -289,7 +289,7 @@ export default function SupplierOrderModal({
               Instructions / Clinical Urgency Notes <span className="text-slate-400 font-normal">(Included in Email)</span>
             </label>
             <textarea
-              placeholder="e.g. Urgent stock replenishment for oral surgery unit. Please prioritize 5-day dispatch."
+              placeholder="Enter order notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 h-20 resize-none placeholder:text-slate-400 text-sm"
@@ -297,18 +297,18 @@ export default function SupplierOrderModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
+          <div className="form-actions">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              className="btn-cancel"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+              className="px-6 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
             >
               <Send size={18} />
               {submitting ? "Sending Order..." : "Send 5-Day Order Request"}

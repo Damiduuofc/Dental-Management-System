@@ -140,7 +140,7 @@ export default function PatientLoginPage() {
               <input
                 type="email"
                 required
-                placeholder="name@example.com"
+                placeholder="Enter your email address"
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({

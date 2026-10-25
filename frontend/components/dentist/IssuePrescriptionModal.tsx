@@ -213,7 +213,7 @@ export default function IssuePrescriptionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-3xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl w-full max-w-3xl p-6 md:p-8 shadow-2xl relative border border-slate-100 max-h-[90vh] modal-scroll">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-2 bg-slate-100 rounded-full cursor-pointer transition"
@@ -264,7 +264,7 @@ export default function IssuePrescriptionModal({
               <input
                 type="text"
                 required
-                placeholder="e.g. Acute periapical abscess, Tooth extraction post-op care"
+                placeholder="Enter diagnosis"
                 value={diagnosis}
                 onChange={(e) => setDiagnosis(e.target.value)}
                 className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -335,7 +335,7 @@ export default function IssuePrescriptionModal({
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Amoxicillin, Ibuprofen"
+                        placeholder="Medicine name"
                         value={med.name}
                         onChange={(e) => handleUpdateMedication(index, "name", e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -346,7 +346,7 @@ export default function IssuePrescriptionModal({
                       <input
                         type="text"
                         required
-                        placeholder="e.g. 500mg, 400mg, 0.12%"
+                        placeholder="Dosage"
                         value={med.dosage}
                         onChange={(e) => handleUpdateMedication(index, "dosage", e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -360,7 +360,7 @@ export default function IssuePrescriptionModal({
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Every 8 hours (TID), Twice daily after food"
+                        placeholder="Frequency"
                         value={med.frequency}
                         onChange={(e) => handleUpdateMedication(index, "frequency", e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -371,7 +371,7 @@ export default function IssuePrescriptionModal({
                       <input
                         type="text"
                         required
-                        placeholder="e.g. 5 days, 7 days, As needed"
+                        placeholder="Duration"
                         value={med.duration}
                         onChange={(e) => handleUpdateMedication(index, "duration", e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -383,7 +383,7 @@ export default function IssuePrescriptionModal({
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">Special Instructions</label>
                     <input
                       type="text"
-                      placeholder="e.g. Take with food, Complete full course even if pain subsides"
+                      placeholder="Special instructions"
                       value={med.instructions}
                       onChange={(e) => handleUpdateMedication(index, "instructions", e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -399,7 +399,7 @@ export default function IssuePrescriptionModal({
             <label className="block text-xs font-bold text-slate-700 mb-1">Doctor Advice / Clinical Notes</label>
             <textarea
               rows={2}
-              placeholder="e.g. Drink plenty of water. Avoid alcohol. Report to clinic immediately if rash or swelling develops."
+              placeholder="Enter general advice for the patient"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -430,11 +430,11 @@ export default function IssuePrescriptionModal({
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="form-actions">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition text-sm cursor-pointer"
+              className="btn-cancel"
             >
               Cancel
             </button>

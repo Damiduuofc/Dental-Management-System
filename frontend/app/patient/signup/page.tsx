@@ -163,7 +163,7 @@ export default function PatientSignupPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-1.5 text-xs text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
-                  placeholder="e.g. John Perera"
+                  placeholder="Enter your full name"
                 />
               </div>
 
@@ -178,7 +178,7 @@ export default function PatientSignupPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-1.5 text-xs text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
-                  placeholder="john@example.com"
+                  placeholder="Enter your email address"
                 />
               </div>
 
@@ -190,7 +190,7 @@ export default function PatientSignupPage() {
                 <input
                   type="tel"
                   required
-                  placeholder="+94XXXXXXXXX"
+                  placeholder="Enter your phone number"
                   value={formData.phoneNumber}
                   onChange={(e) =>
                     setFormData({ ...formData, phoneNumber: e.target.value.replace(/\D/g, "") })
@@ -207,7 +207,7 @@ export default function PatientSignupPage() {
                 <input
                   type="text"
                   required
-                  placeholder="200012345678"
+                  placeholder="Enter your NIC number"
                   value={formData.nic}
                   onChange={(e) => setFormData({ ...formData, nic: e.target.value })}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-1.5 text-xs text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
@@ -254,7 +254,7 @@ export default function PatientSignupPage() {
                 <input
                   type="text"
                   required
-                  placeholder="123 Galle Road, Colombo"
+                  placeholder="Enter your home address"
                   value={formData.homeAddress}
                   onChange={(e) => setFormData({ ...formData, homeAddress: e.target.value })}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-1.5 text-xs text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"

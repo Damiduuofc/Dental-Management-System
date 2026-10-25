@@ -28,6 +28,12 @@ export default function PatientsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Pre-fill search when arriving from the header's global search
+  useEffect(() => {
+    const initial = new URLSearchParams(window.location.search).get('search');
+    if (initial) setSearchQuery(initial);
+  }, []);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<Patient | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -506,7 +512,7 @@ export default function PatientsPage() {
         {/* Installment Payment Modal */}
         {isInstallmentModalOpen && selectedPatient && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
               <button 
                 onClick={() => {
                   setIsInstallmentModalOpen(false);

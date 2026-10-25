@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Plus, CreditCard, Edit, Check, X, ShieldAlert } from 'lucide-react';
 import Sidebar from '@/components/admin/Sidebar';
+import { formatDoctorName } from "@/lib/utils";
 
 interface Patient {
   _id: string;
@@ -493,7 +494,7 @@ export default function AdminBillingPage() {
     setDentistId(dId);
     const dentistObj = dentists.find(d => d._id === dId);
     if (dentistObj) {
-      setDentistSearch(`Dr. ${dentistObj.fullName.replace("Dr. ", "")}`);
+      setDentistSearch(formatDoctorName(dentistObj.fullName));
     } else {
       setDentistSearch('');
     }
@@ -593,7 +594,7 @@ export default function AdminBillingPage() {
                       </td>
                       <td className="p-4 text-slate-600 text-sm font-medium">
                         {bill.treatment}<br/>
-                        <span className="text-xs text-slate-400 font-normal">Method: {bill.paymentMethod || 'N/A'} | Dentist: Dr. {bill.dentist?.fullName?.replace("Dr. ", "") || 'N/A'}</span>
+                        <span className="text-xs text-slate-400 font-normal">Method: {bill.paymentMethod || 'N/A'} | Dentist: {formatDoctorName(bill.dentist?.fullName) || 'N/A'}</span>
                       </td>
                       <td className="p-4 text-slate-900 text-sm font-bold text-right">
                         Rs. {bill.amount.toLocaleString()}
@@ -634,7 +635,7 @@ export default function AdminBillingPage() {
         const totalAmount = items.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
         return (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
               <h2 className="text-2xl font-bold text-slate-900 mb-2">Generate Invoice</h2>
               <p className="text-slate-500 text-sm mb-6">Create a new itemized dental bill for a patient.</p>
 
@@ -665,12 +666,12 @@ export default function AdminBillingPage() {
                               type="button"
                               onClick={() => {
                                 setDentistId(d._id);
-                                setDentistSearch(`Dr. ${d.fullName.replace("Dr. ", "")}`);
+                                setDentistSearch(formatDoctorName(d.fullName));
                                 setShowDentistDropdown(false);
                               }}
                               className="w-full text-left p-3 hover:bg-slate-50 text-slate-800 font-medium text-sm border-b last:border-b-0 border-slate-100"
                             >
-                              Dr. {d.fullName.replace("Dr. ", "")}
+                              {formatDoctorName(d.fullName)}
                             </button>
                           ))}
                         {dentists.filter(d => d.fullName.toLowerCase().includes(dentistSearch.toLowerCase())).length === 0 && (
@@ -811,20 +812,20 @@ export default function AdminBillingPage() {
                   <p className="text-2xl font-black text-blue-800 mt-0.5">Rs. {totalAmount.toLocaleString()}</p>
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t mt-6">
+                <div className="form-actions">
                   <button
                     type="button"
                     onClick={() => {
                       setIsNewModalOpen(false);
                       setItems([]);
                     }}
-                    className="flex-1 py-3 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer"
+                    className="btn-cancel"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md shadow-blue-100 cursor-pointer"
+                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md shadow-blue-100 cursor-pointer text-sm"
                   >
                     Generate Invoice
                   </button>
@@ -840,7 +841,7 @@ export default function AdminBillingPage() {
         const totalAmount = items.reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
         return (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-3xl w-full max-w-lg p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
               <h2 className="text-2xl font-bold text-slate-900 mb-2">Record Transaction</h2>
               <p className="text-slate-500 text-sm mb-6 font-medium">Update invoice items or complete client checkouts.</p>
 
@@ -861,7 +862,7 @@ export default function AdminBillingPage() {
                   >
                     <option value="">-- Choose Dentist --</option>
                     {dentists.map(d => (
-                      <option key={d._id} value={d._id}>Dr. {d.fullName.replace("Dr. ", "")}</option>
+                      <option key={d._id} value={d._id}>{formatDoctorName(d.fullName)}</option>
                     ))}
                   </select>
                 </div>
@@ -999,17 +1000,19 @@ export default function AdminBillingPage() {
                     </button>
                   </div>
                   
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsEditModalOpen(false);
-                      setSelectedBill(null);
-                      setItems([]);
-                    }}
-                    className="w-full py-2.5 mt-2 border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 font-semibold transition cursor-pointer text-sm"
-                  >
-                    Cancel
-                  </button>
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditModalOpen(false);
+                        setSelectedBill(null);
+                        setItems([]);
+                      }}
+                      className="btn-cancel"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1020,7 +1023,7 @@ export default function AdminBillingPage() {
       {/* Pay Now / Pay Later Choice Wizard */}
       {showPaymentChoiceModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
             {payNowOrLater === null ? (
               <div className="text-center">
                 <h3 className="text-xl font-bold text-slate-900 mb-3">Invoice Generated</h3>

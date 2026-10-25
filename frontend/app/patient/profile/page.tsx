@@ -118,13 +118,7 @@ export default function PatientProfile() {
       <main className="flex-1 p-8 ml-64">
         {/* Top Header */}
         <header className="flex justify-between items-center mb-8">
-          <div className="relative">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              placeholder="Search..."
-              className="pl-11 w-72 rounded-full border border-slate-200 bg-white py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
-            />
-          </div>
+          <div />
           <div className="flex items-center gap-3">
             <ProfileDropdown user={patient ? { ...patient, role: 'patient' } : null} />
             <div className="hidden sm:block">
@@ -284,18 +278,18 @@ export default function PatientProfile() {
                     placeholder="List any drug or food allergies..."
                   />
                 </div>
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="form-actions">
                   <button
                     type="button"
                     onClick={() => setIsEditingProfile(false)}
-                    className="border border-slate-200 px-5 py-2.5 rounded-xl text-slate-600 font-bold hover:bg-slate-50 transition cursor-pointer"
+                    className="btn-cancel"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={savingProfile}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl transition cursor-pointer shadow-md shadow-blue-100"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl transition cursor-pointer shadow-md shadow-blue-100 text-sm"
                   >
                     {savingProfile ? "Saving..." : "Save Changes"}
                   </button>

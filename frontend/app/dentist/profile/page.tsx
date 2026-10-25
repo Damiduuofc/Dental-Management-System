@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDoctorName } from "@/lib/utils";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DentistSidebar from "@/components/dentist/Sidebar";
@@ -58,7 +59,6 @@ export default function DentistProfilePage() {
           headers: { 'Authorization': `Bearer ${token}` }
         }
       );
-      fetchNotifications();
     } catch (err) {
       console.error("Error marking notifications as read:", err);
     }
@@ -190,6 +190,8 @@ export default function DentistProfilePage() {
                   setIsNotifOpen(!isNotifOpen);
                   if (!isNotifOpen) {
                     markNotificationsAsRead();
+                  } else {
+                    fetchNotifications();
                   }
                 }}
                 className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition cursor-pointer relative"
@@ -205,7 +207,10 @@ export default function DentistProfilePage() {
                   <div className="flex justify-between items-center border-b pb-2 mb-3">
                     <h4 className="font-bold text-slate-800 text-sm">Notifications</h4>
                     <button 
-                      onClick={() => setIsNotifOpen(false)}
+                      onClick={() => {
+                        setIsNotifOpen(false);
+                        fetchNotifications();
+                      }}
                       className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
                     >
                       Close
@@ -216,8 +221,11 @@ export default function DentistProfilePage() {
                       <p className="text-xs text-slate-400 text-center py-4 font-medium">No notifications yet.</p>
                     ) : (
                       notifications.map(notif => (
-                        <div key={notif._id} className={`p-3 rounded-xl border text-xs leading-relaxed ${notif.read ? 'bg-white border-slate-100 text-slate-600' : 'bg-blue-50/50 border-blue-100 text-slate-800 font-medium'}`}>
-                          <p className="font-bold text-slate-900 mb-0.5">{notif.title}</p>
+                        <div key={notif._id} className={`relative p-3 pl-4 rounded-xl border text-xs leading-relaxed ${notif.read ? 'bg-white border-slate-100 text-slate-500' : 'bg-blue-50 border-blue-200 border-l-4 border-l-blue-600 text-slate-800 font-medium'}`}>
+                          {!notif.read && (
+                            <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider text-white bg-blue-600 px-1.5 py-0.5 rounded">New</span>
+                          )}
+                          <p className={`mb-0.5 pr-10 ${notif.read ? 'font-semibold text-slate-600' : 'font-bold text-slate-900'}`}>{notif.title}</p>
                           <p>{notif.message}</p>
                           <span className="text-[10px] text-slate-400 mt-1 block">
                             {new Date(notif.createdAt).toLocaleDateString()} at {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -242,7 +250,7 @@ export default function DentistProfilePage() {
                 {userInitials}
               </div>
               <div>
-                <h4 className="text-xl font-bold text-slate-800">{user?.fullName}</h4>
+                <h4 className="text-xl font-bold text-slate-800">{formatDoctorName(user?.fullName)}</h4>
                 <span className="inline-block mt-1 bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
                   Dentist
                 </span>
@@ -254,7 +262,7 @@ export default function DentistProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                   <div>
                     <p className="text-slate-400 font-semibold uppercase text-xs">Full Name</p>
-                    <p className="font-bold text-slate-800 mt-1">{user?.fullName}</p>
+                    <p className="font-bold text-slate-800 mt-1">{formatDoctorName(user?.fullName)}</p>
                   </div>
                   <div>
                     <p className="text-slate-400 font-semibold uppercase text-xs">Email Address</p>
@@ -317,18 +325,18 @@ export default function DentistProfilePage() {
                   />
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                <div className="form-actions">
                   <button
                     type="button"
                     onClick={() => setIsEditingProfile(false)}
-                    className="py-3 px-5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold cursor-pointer"
+                    className="btn-cancel"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={savingProfile}
-                    className="py-3 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-100 cursor-pointer disabled:opacity-50"
+                    className="py-2.5 px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-md shadow-blue-100 cursor-pointer disabled:opacity-50 text-sm"
                   >
                     {savingProfile ? "Saving..." : "Save Changes"}
                   </button>

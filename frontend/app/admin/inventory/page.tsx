@@ -760,7 +760,7 @@ export default function InventoryPage() {
       {/* --- ADD ITEM MODAL --- */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsAddModalOpen(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600"
@@ -774,7 +774,7 @@ export default function InventoryPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Latex Gloves (Box)"
+                  placeholder="Enter item name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-4 py-2.5 border rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
@@ -798,7 +798,7 @@ export default function InventoryPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Box, Cartridge, Piece"
+                    placeholder="Enter unit of measure"
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                     className="w-full px-4 py-2.5 border rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
@@ -852,12 +852,17 @@ export default function InventoryPage() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer"
-              >
-                Create Item
-              </button>
+              <div className="form-actions">
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="btn-cancel">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-200 transition cursor-pointer"
+                >
+                  Create Item
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -866,7 +871,7 @@ export default function InventoryPage() {
       {/* --- EDIT DETAILS MODAL --- */}
       {isEditModalOpen && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-lg p-6 md:p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsEditModalOpen(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600"
@@ -945,12 +950,17 @@ export default function InventoryPage() {
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-200 transition cursor-pointer"
-              >
-                Save Changes
-              </button>
+              <div className="form-actions">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="btn-cancel">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-200 transition cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -959,7 +969,7 @@ export default function InventoryPage() {
       {/* --- QUICK RESTOCK MODAL --- */}
       {isRestockModalOpen && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsRestockModalOpen(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600"
@@ -985,19 +995,24 @@ export default function InventoryPage() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Notes / Logs</label>
                 <input
                   type="text"
-                  placeholder="e.g. Received shipment from supplier"
+                  placeholder="Enter a reason or note"
                   value={actionNotes}
                   onChange={(e) => setActionNotes(e.target.value)}
                   className="w-full px-4 py-2.5 border rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold shadow-md shadow-blue-200 transition cursor-pointer"
-              >
-                Confirm Restock
-              </button>
+              <div className="form-actions">
+                <button type="button" onClick={() => setIsRestockModalOpen(false)} className="btn-cancel">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-200 transition cursor-pointer"
+                >
+                  Confirm Restock
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -1006,7 +1021,7 @@ export default function InventoryPage() {
       {/* --- RECORD USAGE MODAL --- */}
       {isUseModalOpen && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl relative max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsUseModalOpen(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600"
@@ -1034,19 +1049,24 @@ export default function InventoryPage() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Notes / Logs</label>
                 <input
                   type="text"
-                  placeholder="e.g. Used for room 3 patient treatment"
+                  placeholder="Enter a reason or note"
                   value={actionNotes}
                   onChange={(e) => setActionNotes(e.target.value)}
                   className="w-full px-4 py-2.5 border rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl font-semibold shadow-md shadow-rose-200 transition cursor-pointer"
-              >
-                Record Usage
-              </button>
+              <div className="form-actions">
+                <button type="button" onClick={() => setIsUseModalOpen(false)} className="btn-cancel">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold shadow-md shadow-rose-200 transition cursor-pointer"
+                >
+                  Record Usage
+                </button>
+              </div>
             </form>
           </div>
         </div>

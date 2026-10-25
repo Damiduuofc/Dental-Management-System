@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatDoctorName } from "@/lib/utils";
 
 interface Patient {
   _id: string;
@@ -116,7 +117,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, presele
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001"}/api/patient/appointments/booked-slots?dentistId=${selectedDentist}&date=${date}`,
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5009"}/api/admin/appointments/booked-slots?dentistId=${selectedDentist}&date=${date}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -314,7 +315,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, presele
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-[550px] max-h-[90vh] overflow-y-auto p-8 rounded-3xl shadow-2xl border border-slate-100">
+      <div className="bg-white w-full max-w-[550px] max-h-[90vh] p-8 rounded-3xl shadow-2xl border border-slate-100 modal-scroll">
         <h2 className="text-2xl font-bold mb-2 text-slate-800">
           {appointment ? "Reschedule Appointment" : "New Appointment"}
         </h2>
@@ -540,7 +541,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, presele
             >
               <option value="">Select Doctor</option>
               {dentists.map(d => (
-                <option key={d._id} value={d._id}>{d.fullName}</option>
+                <option key={d._id} value={d._id}>{formatDoctorName(d.fullName)}</option>
               ))}
             </select>
           </div>
@@ -598,18 +599,18 @@ export default function AppointmentModal({ isOpen, onClose, appointment, presele
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="form-actions">
             <button 
               type="button"
               onClick={onClose} 
-              className="flex-1 py-3.5 rounded-2xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold transition cursor-pointer"
+              className="btn-cancel"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={loading}
-              className="flex-1 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer"
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-lg shadow-blue-100 disabled:opacity-50 cursor-pointer text-sm"
             >
               {loading ? "Saving..." : appointment ? "Reschedule" : "Confirm booking"}
             </button>

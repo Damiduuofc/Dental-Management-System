@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DentistSidebar from "@/components/dentist/Sidebar";
-import { ClipboardList, Plus, Search, Calendar, RefreshCw, AlertCircle, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { ClipboardList, Plus, Search, Calendar, RefreshCw, AlertCircle, Clock, CheckCircle2, XCircle, X } from "lucide-react";
 
 interface SupplyRequest {
   _id: string;
@@ -225,12 +225,12 @@ export default function DentistSupplyRequestPage() {
       {/* --- SUBMIT REQUEST MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative max-h-[90vh] modal-scroll">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              Close
+              <X size={20} />
             </button>
             <h3 className="text-xl font-bold text-slate-900 mb-6">Submit Supply Request</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -239,7 +239,7 @@ export default function DentistSupplyRequestPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Latex Gloves (Box)"
+                  placeholder="Enter item name"
                   value={formData.itemName}
                   onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
                   className="w-full px-4 py-2.5 border rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
@@ -263,7 +263,7 @@ export default function DentistSupplyRequestPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Box, Cartridges, Pieces"
+                    placeholder="Enter unit of measure"
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                     className="w-full px-4 py-2.5 border rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold"
@@ -274,19 +274,24 @@ export default function DentistSupplyRequestPage() {
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Dentist Notes / Urgency</label>
                 <textarea
-                  placeholder="e.g. High priority needed for surgeries next Monday"
+                  placeholder="Enter request notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   className="w-full px-4 py-2.5 border rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none font-medium"
                 />
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold shadow-md shadow-blue-200 transition cursor-pointer"
-              >
-                Submit Request
-              </button>
+              <div className="form-actions">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-cancel">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-200 transition cursor-pointer"
+                >
+                  Submit Request
+                </button>
+              </div>
             </form>
           </div>
         </div>

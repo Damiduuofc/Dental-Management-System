@@ -26,6 +26,7 @@ import {
   Boxes,
   ArrowRight
 } from "lucide-react";
+import { formatDoctorName } from "@/lib/utils";
 
 interface DentistData {
   _id: string;
@@ -765,7 +766,7 @@ export default function AdminSupplyRequestsPage() {
                       return (
                         <tr key={req._id} className="hover:bg-slate-50 transition-colors">
                           <td className="py-4 px-6">
-                            <p className="font-bold text-slate-900">{req.dentist?.fullName || "Dentist"}</p>
+                            <p className="font-bold text-slate-900">{formatDoctorName(req.dentist?.fullName) || "Dentist"}</p>
                             <p className="text-xs text-slate-400 font-medium">{req.dentist?.email}</p>
                           </td>
                           <td className="py-4 px-6">
@@ -867,7 +868,7 @@ export default function AdminSupplyRequestsPage() {
       {/* --- DENTIST REQUEST ACTION MODAL --- */}
       {selectedRequest && actionStatus && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-md p-6 md:p-8 shadow-2xl relative max-h-[90vh] modal-scroll">
             <button
               onClick={() => {
                 setSelectedRequest(null);
@@ -880,7 +881,7 @@ export default function AdminSupplyRequestsPage() {
             <h3 className="text-xl font-bold text-slate-900 mb-2">{actionStatus} Request</h3>
             <p className="text-slate-500 text-sm mb-6">
               Complete action for: <strong>{selectedRequest.itemName}</strong> requested by{" "}
-              {selectedRequest.dentist?.fullName}
+              {formatDoctorName(selectedRequest.dentist?.fullName)}
             </p>
             <form onSubmit={handleUpdateStatus} className="space-y-4">
               <div>

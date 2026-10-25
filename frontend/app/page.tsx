@@ -1083,7 +1083,7 @@ export default function HomePage() {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Sarah Jenkins"
+                        placeholder="Enter your full name"
                         value={bookingForm.name}
                         onChange={(e) =>
                           setBookingForm({ ...bookingForm, name: e.target.value })
@@ -1100,7 +1100,7 @@ export default function HomePage() {
                         <input
                           type="tel"
                           required
-                          placeholder="+1 (555) 000-0000"
+                          placeholder="Enter your phone number"
                           value={bookingForm.phone}
                           onChange={(e) =>
                             setBookingForm({ ...bookingForm, phone: e.target.value })
@@ -1115,7 +1115,7 @@ export default function HomePage() {
                         <input
                           type="email"
                           required
-                          placeholder="sarah@example.com"
+                          placeholder="Enter your email address"
                           value={bookingForm.email}
                           onChange={(e) =>
                             setBookingForm({ ...bookingForm, email: e.target.value })

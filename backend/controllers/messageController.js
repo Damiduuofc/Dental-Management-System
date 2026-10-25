@@ -3,7 +3,12 @@ import User from '../models/User.js';
 import Patient from '../models/Patient.js';
 import Admin from '../models/Admin.js';
 import Message from '../models/Message.js';
+import Appointment from '../models/Appointment.js';
 import { getIO } from '../socket.js';
+
+// Doctors are always displayed with a "Dr." prefix
+const formatStaffName = (s) =>
+  s.role === 'dentist' && !/^dr\.?\s/i.test(s.fullName) ? `Dr. ${s.fullName}` : s.fullName;
 
 export const getContacts = async (req, res) => {
   const currentUserId = req.user.id;
@@ -13,12 +18,13 @@ export const getContacts = async (req, res) => {
     let contacts = [];
 
     if (currentUserRole === 'patient') {
-      // Patients can message doctors (dentist), assistants, and admins
-      const staff = await User.find({}, 'fullName email role phoneNumber');
+      // Patients can only message the doctors they have appointments with, and the system admin
+      const relatedDentistIds = await Appointment.distinct('dentist', { patient: currentUserId });
+      const staff = await User.find({ _id: { $in: relatedDentistIds }, role: 'dentist' }, 'fullName email role phoneNumber');
       const admins = await Admin.find({}, 'fullName email role');
       
       contacts = [
-        ...staff.map(s => ({ id: s._id.toString(), name: s.fullName, email: s.email, role: s.role, model: 'User' })),
+        ...staff.map(s => ({ id: s._id.toString(), name: formatStaffName(s), email: s.email, role: s.role, model: 'User' })),
         ...admins.map(a => ({ id: a._id.toString(), name: a.fullName, email: a.email, role: a.role, model: 'Admin' }))
       ];
     } else {
@@ -29,7 +35,7 @@ export const getContacts = async (req, res) => {
 
       contacts = [
         ...patients.map(p => ({ id: p._id.toString(), name: p.name, email: p.email, role: 'patient', model: 'Patient' })),
-        ...staff.map(s => ({ id: s._id.toString(), name: s.fullName, email: s.email, role: s.role, model: 'User' })),
+        ...staff.map(s => ({ id: s._id.toString(), name: formatStaffName(s), email: s.email, role: s.role, model: 'User' })),
         ...admins.map(a => ({ id: a._id.toString(), name: a.fullName, email: a.email, role: a.role, model: 'Admin' }))
       ];
     }

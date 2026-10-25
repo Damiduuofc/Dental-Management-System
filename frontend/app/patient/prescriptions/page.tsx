@@ -23,6 +23,7 @@ import PrescriptionPrintDocument, {
   DentistInfo, 
   PatientProfile 
 } from "@/components/patient/PrescriptionPrintDocument";
+import { formatDoctorName } from "@/lib/utils";
 
 export default function PatientPrescriptions() {
   const [patient, setPatient] = useState<PatientProfile | null>(null);
@@ -279,7 +280,7 @@ export default function PatientPrescriptions() {
                           </span>
                           {item.dentist && (
                             <span className="flex items-center gap-1.5 text-slate-700 font-semibold">
-                              <User size={14} className="text-emerald-600" /> Dr. {item.dentist.fullName}
+                              <User size={14} className="text-emerald-600" /> {formatDoctorName(item.dentist.fullName)}
                             </span>
                           )}
                           <span className="flex items-center gap-1 text-sky-700 font-semibold bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200/60 text-[11px]">

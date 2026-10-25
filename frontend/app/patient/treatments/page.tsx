@@ -14,6 +14,7 @@ import {
   RefreshCw,
   FileText
 } from "lucide-react";
+import { formatDoctorName } from "@/lib/utils";
 
 interface TreatmentPlanItem {
   _id: string;
@@ -170,7 +171,7 @@ export default function PatientTreatmentsPage() {
                   <div className="flex items-center gap-6 text-xs font-semibold text-slate-500 mb-6 flex-wrap">
                     <span className="flex items-center gap-1.5 text-slate-900">
                       <User size={15} className="text-blue-600" />
-                      Doctor: <strong>Dr. {plan.dentist?.fullName || "Attending Dentist"}</strong>
+                      Doctor: <strong>{formatDoctorName(plan.dentist?.fullName || "Attending Dentist")}</strong>
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar size={14} />

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, User, Phone, Mail, FileText, MapPin, X, Clock, HelpCircle, Check, AlertCircle, Pill } from 'lucide-react';
 import IssuePrescriptionModal from '@/components/dentist/IssuePrescriptionModal';
+import { formatDoctorName } from "@/lib/utils";
 
 interface Patient {
   _id: string;
@@ -108,7 +109,7 @@ export default function PatientDetailsModal({ isOpen, onClose, patient }: Patien
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white w-[750px] max-h-[90vh] overflow-y-auto p-8 rounded-3xl shadow-2xl border border-slate-100 relative">
+      <div className="bg-white w-full max-w-[750px] max-h-[90vh] p-8 rounded-3xl shadow-2xl border border-slate-100 relative modal-scroll">
         {/* Close Button */}
         <button 
           onClick={onClose}
@@ -242,7 +243,7 @@ export default function PatientDetailsModal({ isOpen, onClose, patient }: Patien
                             <span className="block text-xs text-slate-400 mt-0.5">{appt.time}</span>
                           </td>
                           <td className="p-3 text-sm font-semibold text-slate-700">
-                            {appt.dentist ? `Dr. ${appt.dentist.fullName}` : 'N/A'}
+                            {appt.dentist ? formatDoctorName(appt.dentist.fullName) : 'N/A'}
                           </td>
                           <td className="p-3 text-sm text-slate-600">
                             {appt.treatment}

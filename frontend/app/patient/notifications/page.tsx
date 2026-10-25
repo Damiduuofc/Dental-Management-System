@@ -24,6 +24,7 @@ interface Notification {
 export default function PatientNotifications() {
   const [patient, setPatient] = useState<any>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchPatientData = async () => {
     try {
@@ -68,8 +69,9 @@ export default function PatientNotifications() {
           "Content-Type": "application/json" 
         }
       });
-      if (response.ok) {
-        fetchNotifications();
+      // Intentionally not refetching: items stay highlighted as "New" for this visit
+      if (!response.ok) {
+        console.error("Failed to mark notifications as read");
       }
     } catch (error) {
       console.error("Error reading notifications:", error);
@@ -104,6 +106,11 @@ export default function PatientNotifications() {
     }
   };
 
+  const searchLower = searchQuery.toLowerCase().trim();
+  const searchedNotifications = notifications.filter(n =>
+    !searchLower || n.title?.toLowerCase().includes(searchLower) || n.message?.toLowerCase().includes(searchLower) || n.type?.toLowerCase().includes(searchLower)
+  );
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
       <PatientSidebar />
@@ -116,6 +123,8 @@ export default function PatientNotifications() {
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               placeholder="Search alerts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 w-72 rounded-full border border-slate-200 bg-white py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm transition"
             />
           </div>
@@ -135,25 +144,30 @@ export default function PatientNotifications() {
             <p className="text-slate-500 text-sm">System updates, appointments, and billing statements</p>
           </div>
 
-          {notifications.length === 0 ? (
+          {searchedNotifications.length === 0 ? (
             <div className="bg-white rounded-3xl p-12 border text-center text-slate-500 font-medium max-w-3xl shadow-sm">
-              No notifications yet.
+              {searchLower ? "No notifications match your search." : "No notifications yet."}
             </div>
           ) : (
             <div className="space-y-4 max-w-3xl">
-              {notifications.map((notif) => (
+              {searchedNotifications.map((notif) => (
                 <div 
                   key={notif._id} 
-                  className={`border rounded-2xl p-5 transition flex gap-4 ${
-                    notif.read ? "bg-white border-slate-100 shadow-sm" : "bg-blue-50 border-blue-100 shadow-sm"
+                  className={`relative border rounded-2xl p-5 transition flex gap-4 ${
+                    notif.read
+                      ? "bg-white border-slate-100 shadow-sm opacity-80"
+                      : "bg-blue-50 border-blue-200 border-l-4 border-l-blue-600 shadow-md"
                   }`}
                 >
                   <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     {getNotificationIcon(notif.type)}
                   </div>
-                  <div>
-                    <h4 className="font-bold text-slate-800">{notif.title}</h4>
-                    <p className="text-sm text-slate-650 mt-1 font-medium leading-relaxed">{notif.message}</p>
+                  {!notif.read && (
+                    <span className="absolute top-4 right-4 text-[10px] font-extrabold uppercase tracking-wider text-white bg-blue-600 px-2 py-0.5 rounded-full">New</span>
+                  )}
+                  <div className="pr-12">
+                    <h4 className={notif.read ? "font-semibold text-slate-600" : "font-bold text-slate-900"}>{notif.title}</h4>
+                    <p className={`text-sm mt-1 leading-relaxed ${notif.read ? "text-slate-500" : "text-slate-700 font-medium"}`}>{notif.message}</p>
                     <span className="text-xs text-slate-400 block mt-3 font-semibold">
                       Received on {new Date(notif.createdAt).toLocaleString()}
                     </span>

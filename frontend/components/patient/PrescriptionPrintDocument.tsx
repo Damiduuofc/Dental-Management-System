@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Pill, AlertTriangle, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { formatDoctorName } from "@/lib/utils";
 
 export interface MedicationItem {
   name: string;
@@ -198,7 +199,7 @@ export default function PrescriptionPrintDocument({
             <p>
               <span className="text-slate-500 font-medium">Doctor: </span>
               <strong className="text-slate-900 text-sm">
-                Dr. {prescription.dentist?.fullName || "Attending Dentist"}
+                {formatDoctorName(prescription.dentist?.fullName || "Attending Dentist")}
               </strong>
             </p>
             <p className="text-[11px] text-slate-700">
@@ -340,7 +341,7 @@ export default function PrescriptionPrintDocument({
         <div className="flex flex-col items-end text-right">
           <div className="w-56 border-b-2 border-slate-800 mb-1.5"></div>
           <p className="font-black text-sm text-slate-900">
-            Dr. {prescription.dentist?.fullName || "Attending Dentist"}
+            {formatDoctorName(prescription.dentist?.fullName || "Attending Dentist")}
           </p>
           <p className="text-[11px] font-semibold text-slate-700">
             BDS (Hons), Dental Surgeon & Oral Specialist
